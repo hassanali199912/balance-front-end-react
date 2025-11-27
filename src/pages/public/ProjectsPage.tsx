@@ -1,31 +1,38 @@
-import React, { useState, useMemo } from 'react';
+import React, { useState, useMemo, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { 
-  ProjectFilter, 
-  ProjectCard, 
+import {
+  ProjectFilter,
+  ProjectCard,
   Pagination,
   type ActiveFilters,
-  type ProjectCardData 
+  type ProjectCardData
 } from '../../components/ui/projects';
 import PageBreadcrumb from '../../components/ui/shared/PageBreadcrumb';
 import styles from '../../styles/pages/ProjectsPage.module.css';
 import { useLanguage } from '../../contexts/useLanguage';
 import { useToast } from '../../contexts/useToast';
+import { useDispatch, useSelector } from 'react-redux';
+import { AppDispatch, RootState } from '../../store';
+import { useAuth, useFavorites } from '../../contexts';
+import { getProjectsAPi } from '../../store/slices/ProjectSlice';
 
 const ProjectsPage: React.FC = () => {
+
+  //#region Code Area
   const { currentLanguage } = useLanguage();
   const { showToast } = useToast();
   const isArabic = currentLanguage.code === 'ar';
   const navigate = useNavigate();
-  
+
   const [currentPage, setCurrentPage] = useState(1);
   const [filters, setFilters] = useState<ActiveFilters>({
-    status: '',
-    district: '',
-    city: '',
-    area: ''
+    RegionId: "",
+    CityId: "",
+    DistrictId: "",
+    StatusId: ""
+
   });
-  
+
   const itemsPerPage = 6;
 
   const content = {
@@ -282,10 +289,10 @@ const ProjectsPage: React.FC = () => {
   // Filter projects based on active filters
   const filteredProjects = useMemo(() => {
     return allProjects.filter(project => {
-      if (filters.status && project.status !== filters.status) return false;
-      if (filters.district && project.district !== filters.district) return false;
-      if (filters.city && project.city !== filters.city) return false;
-      if (filters.area && project.area !== filters.area) return false;
+      if (filters.StatusId && project.status !== filters.StatusId) return false;
+      if (filters.DistrictId && project.district !== filters.DistrictId) return false;
+      if (filters.CityId && project.city !== filters.CityId) return false;
+      if (filters.RegionId && project.area !== filters.RegionId) return false;
       return true;
     });
   }, [filters, allProjects]);
@@ -301,17 +308,63 @@ const ProjectsPage: React.FC = () => {
   const handleFilterChange = (newFilters: ActiveFilters) => {
     setFilters(newFilters);
     setCurrentPage(1); // Reset to first page when filters change
+    dispatch(getProjectsAPi(newFilters));
+
   };
 
   const handlePageChange = (page: number) => {
     setCurrentPage(page);
     window.scrollTo({ top: 0, behavior: 'smooth' });
+    dispatch(getProjectsAPi({
+      ...filters,
+      Page: page
+    }));
   };
 
-  const handleViewDetails = (slug: string) => {
+  const handleViewDetails = (id: string) => {
     // Navigate to project details page using React Router
-    navigate(`/projects/${slug}`);
+    navigate(`/projects/${id}`);
   };
+  //#endregion Code Area
+
+  //#region Fetch Data
+  const {
+    isProjectFavorited,
+    addProjectToFavorites,
+    removeProjectFromFavorites,
+    favoriteUnits,
+    favoriteProjects,
+    isLoading: favoriteProjectsLoading
+  } = useFavorites();
+  const { user, isAuthenticated } = useAuth();
+
+  const { projects: {
+    data, loading, error
+  } } = useSelector((state: RootState) => state.projects);
+  const dispatch = useDispatch<AppDispatch>();
+
+  const AuthAndFetchData = () => {
+    if (isAuthenticated) {
+      !favoriteProjectsLoading && dispatch(getProjectsAPi({}));
+    } else {
+      dispatch(getProjectsAPi({}));
+    }
+  }
+  useEffect(() => {
+    AuthAndFetchData()
+  }, [isAuthenticated]);
+
+
+
+
+
+  //#endregion Fetch Data
+
+
+
+
+
+
 
   return (
     <>
@@ -343,35 +396,35 @@ const ProjectsPage: React.FC = () => {
           {/* Filter */}
           <ProjectFilter
             onFilterChange={handleFilterChange}
-            totalCount={allProjects.length}
-            filteredCount={filteredProjects.length}
+            totalCount={Number(data?.totalCountOfProjects)}
+            filteredCount={Number(data?.totalCountOfProjects)}
           />
 
+
           {/* Projects Grid */}
-          {paginatedProjects.length > 0 ? (
+          {data && data.items.length !== 0 ? <>
             <div className={styles.projects__grid}>
-              {paginatedProjects.map((project) => (
-                <ProjectCard
-                  key={project.id}
-                  project={project}
-                  onViewDetails={handleViewDetails}
-                />
-              ))}
+
+              {data.items.map(project => <ProjectCard
+                key={project.id}
+                project={project}
+                onViewDetails={handleViewDetails}
+              />)}
             </div>
-          ) : (
+          </> : <>
             <div className={styles.projects__empty}>
               <p>{isArabic ? 'لم يتم العثور على مشاريع' : 'No projects found'}</p>
             </div>
-          )}
+          </>}
 
           {/* Pagination */}
-          {filteredProjects.length > 0 && (
+          {data?.items?.length > 0 && (
             <Pagination
               currentPage={currentPage}
-              totalPages={totalPages}
+              totalPages={Math.ceil(Number(data.totalCountOfProjects) / 10)}
               onPageChange={handlePageChange}
-              itemsPerPage={itemsPerPage}
-              totalItems={filteredProjects.length}
+              itemsPerPage={10}
+              totalItems={Number(data.totalCountOfProjects)}
             />
           )}
         </div>

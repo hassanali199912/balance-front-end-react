@@ -1,12 +1,17 @@
-import React, { useState } from 'react';
+import React, { useEffect, useState } from 'react';
 import { User, Mail, Phone, MessageSquare, Send, Calendar, Users, CheckCircle } from 'lucide-react';
 import styles from '../../../styles/components/project-details/RegisterInterest.module.css';
 import { useLanguage } from '../../../contexts/useLanguage';
+import { useDispatch, useSelector } from 'react-redux';
+import { AppDispatch, RootState } from '../../../store';
+import { InterestsInProject, reset } from '../../../store/slices/InterestedSlice';
+import { useAuth } from '../../../contexts';
 
 interface RegisterInterestProps {
   projectName: string;
   projectNameAr: string;
-  onSubmit: (data: InterestFormData) => void;
+  onSubmit?: (data: InterestFormData) => void;
+  projectId: string
 }
 
 interface InterestFormData {
@@ -20,14 +25,18 @@ interface InterestFormData {
   message: string;
 }
 
-const RegisterInterest: React.FC<RegisterInterestProps> = ({ 
-  projectName, 
-  projectNameAr, 
-  onSubmit 
+const RegisterInterest: React.FC<RegisterInterestProps> = ({
+  projectName,
+  projectNameAr,
+  projectId,
+  onSubmit,
 }) => {
+
+  //#region  Code 
+
   const { currentLanguage } = useLanguage();
   const isArabic = currentLanguage.code === 'ar';
-  
+
   const [formData, setFormData] = useState<InterestFormData>({
     fullName: '',
     email: '',
@@ -38,8 +47,7 @@ const RegisterInterest: React.FC<RegisterInterestProps> = ({
     numberOfPeople: 1,
     message: ''
   });
-  
-  const [isSubmitting, setIsSubmitting] = useState(false);
+
   const [isSubmitted, setIsSubmitted] = useState(false);
   const [errors, setErrors] = useState<Partial<InterestFormData>>({});
 
@@ -123,6 +131,35 @@ const RegisterInterest: React.FC<RegisterInterestProps> = ({
   const t = isArabic ? content.ar : content.en;
   const currentProjectName = isArabic ? projectNameAr : projectName;
 
+
+  const methodsContact = [
+    {
+      "id": 1,
+      "name": "Email",
+      "nameAr": "البريد الالكتروني"
+    },
+    {
+      "id": 2,
+      "name": "PhoneCall",
+      "nameAr": "مكالمه هاتفيه"
+    },
+    {
+      "id": 3,
+      "name": "Whatsap",
+      "nameAr": "واتساب"
+    }
+  ]
+  //#endregion  Code
+
+  const { user, isAuthenticated } = useAuth();
+
+
+  const {
+    data, loading, error
+  } = useSelector((state: RootState) => state.projectInterested);
+  const dispatch = useDispatch<AppDispatch>();
+
+
   const validateForm = (): boolean => {
     const newErrors: Partial<InterestFormData> = {};
 
@@ -136,11 +173,11 @@ const RegisterInterest: React.FC<RegisterInterestProps> = ({
       newErrors.email = t.invalidEmail;
     }
 
-    if (!formData.phone.trim()) {
-      newErrors.phone = t.required;
-    } else if (!/^[+]?[1-9][\d]{0,15}$/.test(formData.phone.replace(/\s/g, ''))) {
-      newErrors.phone = t.invalidPhone;
-    }
+    // if (!formData.phone.trim()) {
+    //   newErrors.phone = t.required;
+    // } else if (!/^[+]?[1-9][\d]{0,15}$/.test(formData.phone.replace(/\s/g, ''))) {
+    //   newErrors.phone = t.invalidPhone;
+    // }
 
     if (!formData.interestedIn) {
       newErrors.interestedIn = t.required;
@@ -152,29 +189,32 @@ const RegisterInterest: React.FC<RegisterInterestProps> = ({
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    
+
     if (!validateForm()) {
       return;
     }
+    // setIsSubmitting(true);
+    let payload: any = {
+      fullName: formData.fullName,
+      email: formData.email,
+      phone: formData.phone,
+      interestedIn: formData.interestedIn,
+      preferredContact: formData.preferredContact,
+      visitDate: formData.visitDate,
+      numberOfPeople: formData.numberOfPeople,
+      message: formData.message,
+      projectId: Number(projectId),
+    };
 
-    setIsSubmitting(true);
-    
-    try {
-      // Simulate API call
-      await new Promise(resolve => setTimeout(resolve, 2000));
-      
-      onSubmit(formData);
-      setIsSubmitted(true);
-    } catch (error) {
-      console.error('Failed to submit form:', error);
-    } finally {
-      setIsSubmitting(false);
+    if (isAuthenticated && user?.id) {
+      payload.userId = user.id;
     }
+    dispatch(InterestsInProject(payload))
   };
 
   const handleInputChange = (field: keyof InterestFormData, value: string | number) => {
     setFormData(prev => ({ ...prev, [field]: value }));
-    
+
     // Clear error when user starts typing
     if (errors[field]) {
       setErrors(prev => ({ ...prev, [field]: undefined }));
@@ -196,6 +236,22 @@ const RegisterInterest: React.FC<RegisterInterestProps> = ({
     setErrors({});
   };
 
+
+  useEffect(() => {
+    dispatch(reset());
+  }, [])
+
+
+  useEffect(() => {
+    console.log("this is data ", data);
+    if (data === true) {
+      setIsSubmitted(true);
+    } else {
+      setIsSubmitted(false);
+    }
+  }, [data])
+
+
   if (isSubmitted) {
     return (
       <section className={styles.interest} dir={isArabic ? 'rtl' : 'ltr'}>
@@ -206,7 +262,7 @@ const RegisterInterest: React.FC<RegisterInterestProps> = ({
             </div>
             <h2 className={styles.interest__success_title}>{t.successTitle}</h2>
             <p className={styles.interest__success_message}>{t.successMessage}</p>
-            <button 
+            <button
               className={styles.interest__back_btn}
               onClick={resetForm}
             >
@@ -321,9 +377,12 @@ const RegisterInterest: React.FC<RegisterInterestProps> = ({
                   onChange={(e) => handleInputChange('preferredContact', e.target.value)}
                   className={styles.interest__select}
                 >
-                  <option value="email">{t.emailContact}</option>
-                  <option value="phone">{t.phoneContact}</option>
+                  {methodsContact.map(item =>
+                    <option value={item.id}>{isArabic ? item.nameAr : item.name}</option>
+                  )}
+                  {/* <option value="phone">{t.phoneContact}</option>
                   <option value="whatsapp">{t.whatsapp}</option>
+                   */}
                 </select>
               </div>
 
@@ -377,10 +436,10 @@ const RegisterInterest: React.FC<RegisterInterestProps> = ({
               {/* Submit Button */}
               <button
                 type="submit"
-                disabled={isSubmitting}
-                className={`${styles.interest__submit} ${isSubmitting ? styles.interest__submit_loading : ''}`}
+                disabled={loading}
+                className={`${styles.interest__submit} ${loading ? styles.interest__submit_loading : ''}`}
               >
-                {isSubmitting ? (
+                {loading ? (
                   <>
                     <div className={styles.interest__spinner}></div>
                     {t.submitting}

@@ -5,6 +5,12 @@
   background: linear-gradient(135deg, #fefbf4 0%, #f8f4e6 100%);
 }
 
+.properties__container {
+  max-width: 1400px;
+  margin: 0 auto;
+  padding: 0 2rem;
+}
+
 /* Header */
 .properties_page__header {
   max-width: 1200px;
@@ -259,29 +265,29 @@
   .properties_page {
     padding: 20px 16px;
   }
-  
+
   .properties_page__title {
     font-size: 2rem;
   }
-  
+
   .properties_page__controls {
     flex-direction: column;
     align-items: stretch;
     gap: 16px;
   }
-  
+
   .properties_page__search {
     min-width: auto;
   }
-  
+
   .properties_page__actions {
     justify-content: space-between;
   }
-  
+
   .properties_page__filters_grid {
     grid-template-columns: 1fr;
   }
-  
+
   .properties_page__grid {
     grid-template-columns: 1fr;
     gap: 20px;
@@ -292,20 +298,20 @@
   .properties_page {
     padding: 16px 12px;
   }
-  
+
   .properties_page__title {
     font-size: 1.75rem;
   }
-  
+
   .properties_page__filters {
     padding: 16px;
   }
-  
+
   .properties_page__filter_btn {
     padding: 10px 16px;
     font-size: 0.875rem;
   }
-  
+
   .properties_page__view_btn {
     padding: 10px;
   }

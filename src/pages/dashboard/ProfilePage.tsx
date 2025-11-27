@@ -81,15 +81,26 @@ interface ContentType {
 const ProfilePage: React.FC = () => {
   const { currentLanguage } = useLanguage();
   const { user, updateUser, changePassword, logout, refreshUserData, loading } = useAuth();
-  const { 
-    favoriteProjects, 
+  const {
+    favoriteProjects,
     favoriteUnits,
     totalFavoriteProjects,
     totalFavoriteUnits,
     isLoading: favoritesLoading,
     removeProjectFromFavorites,
     removeUnitFromFavorites,
-    refreshFavorites
+    refreshFavorites,
+    // Interested
+    interestedProjects,
+    interestedUnits,
+    totalCountInterestedProjects,
+    totalCountInterestedUnites,
+    isInterestedLoading,
+    interestedError,
+    refreshInterested,
+    removeUnitFromInterested,
+    removeProjectFromInterested
+
   } = useFavorites();
   const { showToast } = useToast();
   const [searchParams, setSearchParams] = useSearchParams();
@@ -105,7 +116,7 @@ const ProfilePage: React.FC = () => {
     try {
       const savedProfile = localStorage.getItem('userProfile');
       const savedData = savedProfile ? JSON.parse(savedProfile) : {};
-      
+
       return {
         firstName: user?.firstName || savedData.firstName || '',
         lastName: user?.lastName || savedData.lastName || '',
@@ -128,11 +139,11 @@ const ProfilePage: React.FC = () => {
       };
     }
   });
-  
+
   // Get initial tab from URL params or default to 'profile'
   const initialTab = (searchParams.get('tab') as 'profile' | 'favorites' | 'interests' | 'password') || 'profile';
   const [activeTab, setActiveTab] = useState<'profile' | 'favorites' | 'interests' | 'password'>(initialTab);
-  
+
   // Handle tab changes and update URL
   const handleTabChange = (tab: 'profile' | 'favorites' | 'interests' | 'password') => {
     setActiveTab(tab);
@@ -177,22 +188,10 @@ const ProfilePage: React.FC = () => {
   useEffect(() => {
     if (user?.id) {
       refreshFavorites();
+      refreshInterested()
     }
-  }, [user?.id, refreshFavorites]);
+  }, [user?.id, refreshFavorites, refreshInterested]);
 
-  const [interests] = useState<ProfileProperty[]>([
-    {
-      id: '3',
-      title: 'Balance Residence Project',
-      titleAr: 'مشروع بالانس ريزيدنس',
-      price: 1200000,
-      location: 'King Fahd Road, Riyadh',
-      locationAr: 'طريق الملك فهد، الرياض',
-      image: '/images/properties/project-1.jpg',
-      type: 'villa',
-      area: 200
-    }
-  ]);
 
   // Sync edit data with user data when user changes
   useEffect(() => {
@@ -213,7 +212,7 @@ const ProfilePage: React.FC = () => {
     en: {
       profile: 'Profile',
       favorites: 'Favorites',
-      interests: 'Interests', 
+      interests: 'Interests',
       changePassword: 'Change Password',
       all: 'All',
       projects: 'Projects',
@@ -376,7 +375,7 @@ const ProfilePage: React.FC = () => {
 
   const handlePasswordChange = (field: string, value: string) => {
     setPasswordData(prev => ({ ...prev, [field]: value }));
-    
+
     // Validate new password in real-time
     if (field === 'newPassword') {
       setPasswordValidation({
@@ -391,7 +390,7 @@ const ProfilePage: React.FC = () => {
 
   const handleSaveProfile = async () => {
     if (!user || !updateUser) return;
-    
+
     setIsSaving(true);
     try {
       // Create FormData for multipart/form-data request
@@ -402,7 +401,7 @@ const ProfilePage: React.FC = () => {
       formData.append('Bio', editData.bio);
       formData.append('Location', editData.location);
       formData.append('WhatsAppNumber', editData.whatsapp);
-      
+
       // Get user's public IP
       try {
         const ipResponse = await fetch('https://api.ipify.org?format=json');
@@ -413,7 +412,7 @@ const ProfilePage: React.FC = () => {
       }
 
       await updateUser(formData);
-      
+
       // Refresh user data from server
       setIsRefreshing(true);
       try {
@@ -423,7 +422,7 @@ const ProfilePage: React.FC = () => {
       } finally {
         setIsRefreshing(false);
       }
-      
+
       setIsEditing(false);
       // Toast is handled by AuthContext.updateUser
     } catch (error) {
@@ -452,26 +451,26 @@ const ProfilePage: React.FC = () => {
         newPassword: passwordData.newPassword,
         confirmNewPassword: passwordData.confirmPassword
       });
-      
+
       setPasswordData({
         currentPassword: '',
         newPassword: '',
         confirmPassword: ''
       });
-      
+
       showToast(
-        'success', 
-        isArabic 
-          ? 'تم تغيير كلمة المرور بنجاح. سيتم تسجيل الخروج الآن' 
+        'success',
+        isArabic
+          ? 'تم تغيير كلمة المرور بنجاح. سيتم تسجيل الخروج الآن'
           : 'Password changed successfully. You will be logged out now'
       );
-      
+
       // Wait a moment for the toast to show, then logout and redirect
       setTimeout(async () => {
         await logout();
         navigate('/signin');
       }, 2000);
-      
+
     } catch (error) {
       showToast('error', t.validation.updateError);
     } finally {
@@ -483,7 +482,7 @@ const ProfilePage: React.FC = () => {
     if (user) {
       const savedProfile = localStorage.getItem('userProfile');
       const savedData = savedProfile ? JSON.parse(savedProfile) : {};
-      
+
       setEditData({
         firstName: user.firstName || savedData.firstName || '',
         lastName: user.lastName || savedData.lastName || '',
@@ -499,13 +498,13 @@ const ProfilePage: React.FC = () => {
 
   const formatDate = (dateString: string) => {
     const date = new Date(dateString);
-    return isArabic 
+    return isArabic
       ? date.toLocaleDateString('ar-SA')
       : date.toLocaleDateString('en-US', { year: 'numeric', month: 'long', day: 'numeric' });
   };
 
   const formatPrice = (price: number) => {
-    return isArabic 
+    return isArabic
       ? `${price.toLocaleString('ar-SA')} ${t.currency}`
       : `${price.toLocaleString('en-US')} ${t.currency}`;
   };
@@ -519,8 +518,8 @@ const ProfilePage: React.FC = () => {
   const renderPropertyCard = (property: ProfileProperty) => (
     <div key={property.id} className={styles.profile__property_card}>
       <div className={styles.profile__property_image}>
-        <img 
-          src={property.image} 
+        <img
+          src={property.image}
           alt={isArabic ? property.titleAr : property.title}
           onError={(e) => {
             (e.target as HTMLImageElement).src = '/images/placeholder-property.jpg';
@@ -642,7 +641,7 @@ const ProfilePage: React.FC = () => {
         {/* Content */}
         <div className={styles.profile__content}>
           {activeTab === 'profile' && (
-            <ProfileTab 
+            <ProfileTab
               user={user}
               editData={editData}
               isEditing={isEditing}
@@ -655,7 +654,7 @@ const ProfilePage: React.FC = () => {
           {activeTab === 'favorites' && (
             <div className={styles.profile__tab_content}>
               <h2 className={styles.profile__section_title}>{t.myFavorites}</h2>
-              
+
               {favoritesLoading ? (
                 <LoadingSpinner />
               ) : (
@@ -669,15 +668,15 @@ const ProfilePage: React.FC = () => {
                       <div className={styles.profile__properties_grid}>
                         {favoriteProjects.map((project) => (
                           <PropertyCard
-                            key={project.id}
-                            id={project.id}
-                            title={isArabic ? project.titleAr : project.title}
-                            location={isArabic ? project.locationAr : project.location}
-                            price={isArabic ? project.priceAr : project.price}
-                            image={project.image}
+                            key={project.projectId}
+                            id={project.projectId}
+                            title={isArabic ? project.nameAr : project.nameEn}
+                            location={isArabic ? project.location : project.location}
+                            price={isArabic ? project.price : project.price}
+                            image={project.mainImageUrl}
                             type="project"
                             onRemove={removeProjectFromFavorites}
-                            viewUrl={`/projects/${project.slug || project.id}`}
+                            viewUrl={`/projects/${project.projectId || project.projectId}`}
                             isArabic={isArabic}
                           />
                         ))}
@@ -699,16 +698,16 @@ const ProfilePage: React.FC = () => {
                       <div className={styles.profile__properties_grid}>
                         {favoriteUnits.map((unit) => (
                           <PropertyCard
-                            key={unit.id}
-                            id={unit.id}
-                            title={isArabic ? unit.nameAr : unit.name}
-                            location={isArabic ? unit.locationAr : unit.location}
+                            key={unit.projectId}
+                            id={unit.projectId}
+                            title={isArabic ? unit.nameAr : unit.nameEn}
+                            location={isArabic ? unit.location : unit.location}
                             price={unit.price}
-                            area={unit.area}
-                            image={unit.image}
+                            area={0}
+                            image={unit.mainImageUrl}
                             type="unit"
                             onRemove={removeUnitFromFavorites}
-                            viewUrl={`/properties/${unit.id}`}
+                            viewUrl={`/properties/${unit.projectId}`}
                             isArabic={isArabic}
                           />
                         ))}
@@ -728,9 +727,9 @@ const ProfilePage: React.FC = () => {
           {activeTab === 'interests' && (
             <div className={styles.profile__tab_content}>
               <h2 className={styles.profile__section_title}>{t.myInterests}</h2>
-              
+
               {/* Filter Tabs */}
-              <div className={styles.profile__filter_tabs}>
+              {/* <div className={styles.profile__filter_tabs}>
                 <button
                   className={`${styles.profile__filter_tab} ${interestsFilter === 'all' ? styles.active : ''}`}
                   onClick={() => setInterestsFilter('all')}
@@ -749,9 +748,76 @@ const ProfilePage: React.FC = () => {
                 >
                   {t.properties}
                 </button>
-              </div>
-              
-              {getFilteredItems(interests, interestsFilter).length > 0 ? (
+              </div> */}
+              {isInterestedLoading ? (
+                <LoadingSpinner />
+              ) : (
+                <>
+                  {/* Intersted Projects Section */}
+                  <div className={styles.profile__favorites_section}>
+                    <h3 className={styles.profile__section_subtitle}>
+                      {t.projects} ({totalCountInterestedProjects})
+                    </h3>
+                    {interestedProjects.length > 0 ? (
+                      <div className={styles.profile__properties_grid}>
+                        {interestedProjects.map((project) => (
+                          <PropertyCard
+                            key={project.projectId}
+                            id={project.projectId}
+                            title={isArabic ? project.projectNameAr : project.projectNameEn}
+                            location={isArabic ? project.locationAr : project.locationEn}
+                            price={isArabic ? project.price : project.price}
+                            image={project.mainImageUrl}
+                            type="project"
+                            onRemove={removeProjectFromInterested}
+                            viewUrl={`/projects/${project.projectId || project.projectId}`}
+                            isArabic={isArabic}
+                          />
+                        ))}
+                      </div>
+                    ) : (
+                      <div className={styles.profile__empty_state}>
+                        <Heart size={48} />
+                        <p>{isArabic ? 'لا توجد مشاريع مهتمة' : 'No Interested projects'}</p>
+                      </div>
+                    )}
+                  </div>
+
+                  {/* Intersted Units Section */}
+                  <div className={styles.profile__favorites_section}>
+                    <h3 className={styles.profile__section_subtitle}>
+                      {t.properties} ({totalCountInterestedUnites})
+                    </h3>
+                    {interestedUnits.length > 0 ? (
+                      <div className={styles.profile__properties_grid}>
+                        {interestedUnits.map((unit) => (
+                          <PropertyCard
+                            key={unit.unitId}
+                            id={unit.unitId}
+                            title={isArabic ? unit.unitTitleAr : unit.unitTitleEn}
+                            location={isArabic ? unit.locationAr : unit.locationEn}
+                            price={unit.price}
+                            area={0}
+                            image={unit.mainImageUrl}
+                            type="unit"
+                            onRemove={removeUnitFromInterested}
+                            viewUrl={`/properties/${unit.unitId}`}
+                            isArabic={isArabic}
+                          />
+                        ))}
+                      </div>
+                    ) : (
+                      <div className={styles.profile__empty_state}>
+                        <Heart size={48} />
+                        <p>{isArabic ? 'لا توجد عقارات مهتمة' : 'No Interested properties'}</p>
+                      </div>
+                    )}
+                  </div>
+                </>
+              )}
+
+
+              {/* {getFilteredItems(interests, interestsFilter).length > 0 ? (
                 <div className={styles.profile__properties_grid}>
                   {getFilteredItems(interests, interestsFilter).map(renderPropertyCard)}
                 </div>
@@ -760,7 +826,7 @@ const ProfilePage: React.FC = () => {
                   <Eye size={48} />
                   <p>{t.noInterests}</p>
                 </div>
-              )}
+              )} */}
             </div>
           )}
 
@@ -778,7 +844,7 @@ const ProfilePage: React.FC = () => {
                     className={styles.profile__input}
                   />
                 </div>
-                
+
                 <div className={styles.profile__form_group}>
                   <label className={styles.profile__label}>{t.newPassword}</label>
                   <input
@@ -828,7 +894,7 @@ const ProfilePage: React.FC = () => {
                     </div>
                   </div>
                 )}
-                
+
                 <div className={styles.profile__form_group}>
                   <label className={styles.profile__label}>{t.confirmPassword}</label>
                   <input
@@ -839,7 +905,7 @@ const ProfilePage: React.FC = () => {
                     className={styles.profile__input}
                   />
                 </div>
-                
+
                 <button
                   onClick={handleChangePassword}
                   disabled={loading || !passwordData.currentPassword || !passwordData.newPassword || !passwordData.confirmPassword}
@@ -853,7 +919,7 @@ const ProfilePage: React.FC = () => {
           )}
         </div>
       </div>
-      
+
       {/* Loading Overlay */}
       {loading && <LoadingSpinner fullScreen />}
     </div>
@@ -876,13 +942,13 @@ interface ProfileTabProps {
   isArabic: boolean;
 }
 
-const ProfileTab: React.FC<ProfileTabProps> = ({ 
-  user, 
-  editData, 
-  isEditing, 
-  onInputChange, 
+const ProfileTab: React.FC<ProfileTabProps> = ({
+  user,
+  editData,
+  isEditing,
+  onInputChange,
   t,
-  isArabic 
+  isArabic
 }) => (
   <div className={styles.profile__tab_content}>
     <h2 className={styles.profile__section_title}>{t.personalInfo}</h2>

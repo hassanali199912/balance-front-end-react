@@ -4,14 +4,14 @@ import styles from '../../../styles/components/project-details/ProjectOverview.m
 import { useLanguage } from '../../../contexts/useLanguage';
 
 interface ProjectOverviewProps {
-  overview: {
-    totalUnits: number;
-    totalArea: string;
-    parkingSpaces: number;
-    elevators: number;
-    features: string[];
-    featuresAr: string[];
-  };
+  overview?: {
+    totalUnits?: number;
+    totalArea?: string;
+    parkingSpaces?: number;
+    elevators?: number;
+    features?: string[];
+    featuresAr?: string[];
+  } | null;
 }
 
 const ProjectOverview: React.FC<ProjectOverviewProps> = ({ overview }) => {
@@ -26,7 +26,7 @@ const ProjectOverview: React.FC<ProjectOverviewProps> = ({ overview }) => {
       parkingSpaces: 'Parking Spaces',
       elevators: 'Elevators',
       features: 'Features & Amenities',
-      sqm: 'sqm'
+      sqm: 'sqm',
     },
     ar: {
       title: 'نظرة عامة على المشروع',
@@ -35,50 +35,63 @@ const ProjectOverview: React.FC<ProjectOverviewProps> = ({ overview }) => {
       parkingSpaces: 'مواقف السيارات',
       elevators: 'المصاعد',
       features: 'المزايا والخدمات',
-      sqm: 'م²'
-    }
+      sqm: 'م²',
+    },
   };
 
   const t = isArabic ? content.ar : content.en;
-  const currentFeatures = isArabic ? overview.featuresAr : overview.features;
 
+  // ✅ استخدم optional chaining + fallback للfeatures
+  const currentFeatures = isArabic
+    ? overview?.featuresAr ?? []
+    : overview?.features ?? [];
+
+  // ✅ قيم افتراضية لو overview مش موجود
   const stats = [
     {
       icon: Building,
       label: t.totalUnits,
-      value: overview.totalUnits.toLocaleString(isArabic ? 'ar-SA' : 'en-US'),
-      color: '#3b82f6'
+      value: overview?.totalUnits
+        ? overview.totalUnits.toLocaleString(isArabic ? 'ar-SA' : 'en-US')
+        : '—',
+      color: '#3b82f6',
     },
     {
       icon: Square,
       label: t.totalArea,
-      value: `${parseInt(overview.totalArea).toLocaleString(isArabic ? 'ar-SA' : 'en-US')} ${t.sqm}`,
-      color: '#10b981'
+      value: overview?.totalArea
+        ? `${parseInt(overview.totalArea).toLocaleString(isArabic ? 'ar-SA' : 'en-US')} ${t.sqm}`
+        : '—',
+      color: '#10b981',
     },
     {
       icon: Car,
       label: t.parkingSpaces,
-      value: overview.parkingSpaces.toLocaleString(isArabic ? 'ar-SA' : 'en-US'),
-      color: '#f59e0b'
+      value: overview?.parkingSpaces
+        ? overview.parkingSpaces.toLocaleString(isArabic ? 'ar-SA' : 'en-US')
+        : '—',
+      color: '#f59e0b',
     },
     {
       icon: ArrowUp,
       label: t.elevators,
-      value: overview.elevators.toLocaleString(isArabic ? 'ar-SA' : 'en-US'),
-      color: '#ef4444'
-    }
+      value: overview?.elevators
+        ? overview.elevators.toLocaleString(isArabic ? 'ar-SA' : 'en-US')
+        : '—',
+      color: '#ef4444',
+    },
   ];
 
   return (
     <section className={styles.overview} dir={isArabic ? 'rtl' : 'ltr'}>
       <div className={styles.overview__container}>
         <h2 className={styles.overview__title}>{t.title}</h2>
-        
+
         {/* Statistics Grid */}
         <div className={styles.overview__stats}>
           {stats.map((stat, index) => (
-            <div 
-              key={index} 
+            <div
+              key={index}
               className={styles.overview__stat_card}
               style={{ '--stat-color': stat.color } as React.CSSProperties}
             >
@@ -96,14 +109,20 @@ const ProjectOverview: React.FC<ProjectOverviewProps> = ({ overview }) => {
         {/* Features Section */}
         <div className={styles.overview__features_section}>
           <h3 className={styles.overview__features_title}>{t.features}</h3>
-          <div className={styles.overview__features_grid}>
-            {currentFeatures.map((feature, index) => (
-              <div key={index} className={styles.overview__feature_item}>
-                <CheckCircle size={20} className={styles.overview__feature_icon} />
-                <span className={styles.overview__feature_text}>{feature}</span>
-              </div>
-            ))}
-          </div>
+          {currentFeatures.length > 0 ? (
+            <div className={styles.overview__features_grid}>
+              {currentFeatures.map((feature, index) => (
+                <div key={index} className={styles.overview__feature_item}>
+                  <CheckCircle size={20} className={styles.overview__feature_icon} />
+                  <span className={styles.overview__feature_text}>{feature}</span>
+                </div>
+              ))}
+            </div>
+          ) : (
+            <p className={styles.overview__no_features}>
+              {isArabic ? 'لا توجد مزايا حالياً' : 'No features available'}
+            </p>
+          )}
         </div>
       </div>
     </section>

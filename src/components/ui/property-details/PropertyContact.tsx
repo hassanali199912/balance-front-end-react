@@ -1,11 +1,15 @@
-import React, { useState } from 'react';
+import React, { useEffect, useState } from 'react';
 import { Phone, Mail, MessageCircle, User, Send } from 'lucide-react';
 import styles from '../../../styles/components/property-details/PropertyContact.module.css';
 import { useLanguage } from '../../../contexts/useLanguage';
 import Toast from '../Toast';
+import { ContactFormData, InterestsInUnit, reset } from '../../../store/slices/InterestedSlice';
+import { useDispatch, useSelector } from 'react-redux';
+import { AppDispatch, RootState } from '../../../store';
+import { useAuth } from '../../../contexts';
 
 interface PropertyContactProps {
-  propertyId?: string;
+  propertyId: number;
   propertyTitle: string;
   propertyTitleAr: string;
   agentName?: string;
@@ -15,13 +19,7 @@ interface PropertyContactProps {
   agentPhoto?: string;
 }
 
-interface ContactFormData {
-  name: string;
-  email: string;
-  phone: string;
-  message: string;
-  contactPreference: 'phone' | 'email' | 'whatsapp';
-}
+
 
 const PropertyContact: React.FC<PropertyContactProps> = ({
   propertyTitle,
@@ -30,20 +28,21 @@ const PropertyContact: React.FC<PropertyContactProps> = ({
   agentNameAr,
   agentPhone,
   agentEmail,
-  agentPhoto
+  agentPhoto,
+  propertyId
 }) => {
   const { currentLanguage } = useLanguage();
   const isArabic = currentLanguage.code === 'ar';
-  
+
   const [formData, setFormData] = useState<ContactFormData>({
     name: '',
     email: '',
     phone: '',
     message: '',
-    contactPreference: 'phone'
+    contactPreference: 0,
+    unitId: propertyId
   });
 
-  const [isSubmitting, setIsSubmitting] = useState(false);
   const [showToast, setShowToast] = useState(false);
   const [toastMessage, setToastMessage] = useState('');
   const [toastType, setToastType] = useState<'success' | 'error' | 'info'>('success');
@@ -115,6 +114,21 @@ const PropertyContact: React.FC<PropertyContactProps> = ({
   const currentPropertyTitle = isArabic ? propertyTitleAr : propertyTitle;
   const currentAgentName = isArabic ? agentNameAr : agentName;
 
+
+  const {
+    data, loading, error
+  } = useSelector((state: RootState) => state.projectInterested);
+  const dispatch = useDispatch<AppDispatch>();
+  const { user, isAuthenticated } = useAuth();
+
+
+  useEffect(() => {
+    dispatch(reset());
+  }, [])
+
+
+
+
   // Form validation
   const validateForm = (): boolean => {
     const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
@@ -154,36 +168,47 @@ const PropertyContact: React.FC<PropertyContactProps> = ({
   // Handle form submission
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    
+
     if (!validateForm()) return;
 
-    setIsSubmitting(true);
+    let payload: any = {
 
-    try {
-      // Simulate API call
-      await new Promise(resolve => setTimeout(resolve, 2000));
-      
+      name: formData.name,
+      email: formData.email,
+      phone: formData.phone,
+      message: formData.message,
+      contactPreference: formData.contactPreference,
+      unitId: propertyId
+    };
+
+    if (isAuthenticated && user?.id) {
+      payload.userId = user.id;
+    }
+    dispatch(InterestsInUnit(payload))
+  };
+
+
+
+  useEffect(() => {
+    console.log("this is data ", data);
+    if (data === true) {
       setToastMessage(t.messageSent);
       setToastType('success');
       setShowToast(true);
-      
-      // Reset form
       setFormData({
         name: '',
         email: '',
         phone: '',
         message: '',
-        contactPreference: 'phone'
+        contactPreference: 0,
+        unitId: propertyId
       });
-    } catch (err) {
-      console.log('Error sending message:', err);
+    } else {
       setToastMessage(t.messageError);
       setToastType('error');
       setShowToast(true);
-    } finally {
-      setIsSubmitting(false);
     }
-  };
+  }, [data])
 
   // Handle input changes
   const handleInputChange = (e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement | HTMLSelectElement>) => {
@@ -200,28 +225,27 @@ const PropertyContact: React.FC<PropertyContactProps> = ({
   const phoneUrl = agentPhone ? `tel:${agentPhone}` : '#';
 
   return (
-    <div className={styles.contact} dir={isArabic ? 'rtl' : 'ltr'} 
+    <div className={styles.contact} dir={isArabic ? 'rtl' : 'ltr'}
     >
       <h2 className={styles.contact__title}>{t.title}</h2>
-      
+
       <div className={styles.contact__content}>
         {/* Agent Information */}
         {(currentAgentName || agentPhone || agentEmail) && (
-          <div className={styles.contact__agent}>
-            <h3 className={styles.contact__agent_title}>{t.agentInfo}</h3>
-            
+          <div className={styles.contact__agent}>            <h3 className={styles.contact__agent_title}>{t.agentInfo}</h3>
+
             <div className={styles.contact__agent_card}>
               {agentPhoto && (
                 <div className={styles.contact__agent_photo}>
                   <img src={agentPhoto} alt={currentAgentName} />
                 </div>
               )}
-              
+
               <div className={styles.contact__agent_info}>
                 {currentAgentName && (
                   <h4 className={styles.contact__agent_name}>{currentAgentName}</h4>
                 )}
-                
+
                 <div className={styles.contact__agent_actions}>
                   {agentPhone && (
                     <a href={phoneUrl} className={styles.contact__agent_action}>
@@ -250,7 +274,7 @@ const PropertyContact: React.FC<PropertyContactProps> = ({
         {/* Contact Form */}
         <div className={styles.contact__form_section}>
           <h3 className={styles.contact__form_title}>{t.contactForm}</h3>
-          
+
           <form className={styles.contact__form} onSubmit={handleSubmit}>
             <div className={styles.contact__form_row}>
               <div className={styles.contact__form_group}>
@@ -268,7 +292,7 @@ const PropertyContact: React.FC<PropertyContactProps> = ({
                   required
                 />
               </div>
-              
+
               <div className={styles.contact__form_group}>
                 <label className={styles.contact__form_label}>
                   <Mail size={16} />
@@ -302,7 +326,7 @@ const PropertyContact: React.FC<PropertyContactProps> = ({
                   required
                 />
               </div>
-              
+
               <div className={styles.contact__form_group}>
                 <label className={styles.contact__form_label}>
                   <MessageCircle size={16} />
@@ -314,9 +338,9 @@ const PropertyContact: React.FC<PropertyContactProps> = ({
                   onChange={handleInputChange}
                   className={styles.contact__form_select}
                 >
-                  <option value="phone">{t.contactOptions.phone}</option>
-                  <option value="email">{t.contactOptions.email}</option>
-                  <option value="whatsapp">{t.contactOptions.whatsapp}</option>
+                  <option value={0}>{t.contactOptions.phone}</option>
+                  <option value={1}>{t.contactOptions.email}</option>
+                  <option value={2}>{t.contactOptions.whatsapp}</option>
                 </select>
               </div>
             </div>
@@ -340,9 +364,9 @@ const PropertyContact: React.FC<PropertyContactProps> = ({
             <button
               type="submit"
               className={styles.contact__form_submit}
-              disabled={isSubmitting}
+              disabled={loading}
             >
-              {isSubmitting ? (
+              {loading ? (
                 <div className={styles.contact__form_loading}>
                   <div className={styles.contact__form_spinner}></div>
                   {isArabic ? 'جاري الإرسال...' : 'Sending...'}

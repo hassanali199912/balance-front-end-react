@@ -1,13 +1,13 @@
 import React, { useState, useMemo } from 'react';
 import { Link } from 'react-router-dom';
-import { 
-  Filter, 
-  Grid, 
-  List, 
-  Bed, 
-  Bath, 
-  Square, 
-  Heart, 
+import {
+  Filter,
+  Grid,
+  List,
+  Bed,
+  Bath,
+  Square,
+  Heart,
   Eye,
   ChevronLeft,
   ChevronRight,
@@ -19,9 +19,10 @@ import { useLanguage } from '../../../contexts/useLanguage';
 import { useFavorites } from '../../../contexts/useFavorites';
 import { useAuth } from '../../../contexts/useAuth';
 import Toast from '../common/Toast';
+import { Unit } from '../../../store/slices/UnitSlice';
 
 interface ProjectProperty {
-  id: string;
+  id: number;
   name: string;
   nameAr: string;
   type: string;
@@ -52,8 +53,7 @@ interface PropertyFilters {
 }
 
 interface ProjectPropertiesProps {
-  properties: ProjectProperty[];
-  onPropertyClick: (property: ProjectProperty) => void;
+  properties: Unit[];
   onFavoriteToggle?: (propertyId: string) => void; // Make optional since we'll handle internally
 }
 
@@ -63,14 +63,14 @@ const ProjectProperties: React.FC<ProjectPropertiesProps> = ({
 }) => {
   const { currentLanguage } = useLanguage();
   const { isAuthenticated } = useAuth();
-  const { 
+  const {
     isUnitFavorited,
     addUnitToFavorites,
     removeUnitFromFavorites
   } = useFavorites();
-  
+
   const isArabic = currentLanguage.code === 'ar';
-  
+
   const [filters, setFilters] = useState<PropertyFilters>({
     priceRange: { min: 0, max: 10000000 },
     bedrooms: '',
@@ -78,7 +78,7 @@ const ProjectProperties: React.FC<ProjectPropertiesProps> = ({
     floor: '',
     features: []
   });
-  
+
   const [isFilterOpen, setIsFilterOpen] = useState(true);
   const [viewMode, setViewMode] = useState<'grid' | 'list'>('grid');
   const [currentPage, setCurrentPage] = useState(1);
@@ -156,10 +156,10 @@ const ProjectProperties: React.FC<ProjectPropertiesProps> = ({
 
   // Get unique values for filters
   const filterOptions = useMemo(() => {
-    const bedroomsSet = new Set(properties.map(p => p.bedrooms.toString()));
-    const buildingsSet = new Set(properties.map(p => isArabic ? p.buildingAr : p.building));
+    const bedroomsSet = new Set(properties.map(p => p.numberOfRooms.toString()));
+    const buildingsSet = new Set(properties.map(p => p.building));
     const floorsSet = new Set(properties.map(p => p.floor.toString()));
-    const featuresSet = new Set(properties.flatMap(p => isArabic ? p.featuresAr : p.features));
+    const featuresSet = new Set(properties.flatMap(p => p.features));
 
     return {
       bedrooms: Array.from(bedroomsSet).sort(),
@@ -178,13 +178,13 @@ const ProjectProperties: React.FC<ProjectPropertiesProps> = ({
       }
 
       // Bedrooms filter
-      if (filters.bedrooms && property.bedrooms.toString() !== filters.bedrooms) {
+      if (filters.bedrooms && property.numberOfRooms.toString() !== filters.bedrooms) {
         return false;
       }
 
       // Building filter
       if (filters.building) {
-        const buildingName = isArabic ? property.buildingAr : property.building;
+        const buildingName = property.building;
         if (buildingName !== filters.building) {
           return false;
         }
@@ -195,16 +195,16 @@ const ProjectProperties: React.FC<ProjectPropertiesProps> = ({
         return false;
       }
 
-      // Features filter
-      if (filters.features.length > 0) {
-        const propertyFeatures = isArabic ? property.featuresAr : property.features;
-        const hasAllFeatures = filters.features.every(feature => 
-          propertyFeatures.includes(feature)
-        );
-        if (!hasAllFeatures) {
-          return false;
-        }
-      }
+      // // Features filter
+      // if (filters.features.length > 0) {
+      //   const propertyFeatures = property.features;
+      //   const hasAllFeatures = filters.features.every(feature =>
+      //     propertyFeatures.includes(feature)
+      //   );
+      //   if (!hasAllFeatures) {
+      //     return false;
+      //   }
+      // }
 
       return true;
     });
@@ -236,29 +236,29 @@ const ProjectProperties: React.FC<ProjectPropertiesProps> = ({
     setCurrentPage(1);
   };
 
-  const handleFavoriteToggle = async (property: ProjectProperty, event: React.MouseEvent) => {
+  const handleFavoriteToggle = async (property: Unit, event: React.MouseEvent) => {
     event.stopPropagation();
-    
+
     if (!isAuthenticated) {
       // You could show a login prompt here or redirect to login
       return;
     }
-    
+
     try {
-      const unitId = parseInt(property.id);
+      const unitId = (property.id);
       const isCurrentlyFavorited = isUnitFavorited(unitId);
-      
+
       if (isCurrentlyFavorited) {
         await removeUnitFromFavorites(unitId);
       } else {
         await addUnitToFavorites(unitId);
       }
-      
+
       // Call the optional external handler if provided
       if (onFavoriteToggle) {
-        onFavoriteToggle(property.id);
+        onFavoriteToggle(property.id + "");
       }
-      
+
     } catch (error) {
       console.error('Error toggling unit favorite:', error);
     }
@@ -288,37 +288,37 @@ const ProjectProperties: React.FC<ProjectPropertiesProps> = ({
   return (
     <section className={styles.properties} dir={isArabic ? 'rtl' : 'ltr'}>
       {/* Toast Notification */}
-      <Toast 
+      <Toast
         message={toast.message}
         type={toast.type}
         isVisible={toast.show}
         onClose={closeToast}
       />
-      
+
       <div className={styles.properties__container}>
         <div className={styles.properties__header}>
           <h2 className={styles.properties__title}>
             {t.title}
           </h2>
-          
+
           <div className={styles.properties__controls}>
-            <button 
+            <button
               className={styles.properties__filter_toggle}
               onClick={() => setIsFilterOpen(!isFilterOpen)}
             >
               <Filter size={20} />
               {t.filter}
             </button>
-            
+
             <div className={styles.properties__view_modes}>
-              <button 
+              <button
                 className={`${styles.properties__view_btn} ${viewMode === 'grid' ? styles.properties__view_btn_active : ''}`}
                 onClick={() => setViewMode('grid')}
                 title={t.gridView}
               >
                 <Grid size={20} />
               </button>
-              <button 
+              <button
                 className={`${styles.properties__view_btn} ${viewMode === 'list' ? styles.properties__view_btn_active : ''}`}
                 onClick={() => setViewMode('list')}
                 title={t.listView}
@@ -408,7 +408,7 @@ const ProjectProperties: React.FC<ProjectPropertiesProps> = ({
             </div>
 
             {/* Clear Filters */}
-            <button 
+            <button
               className={styles.properties__clear_btn}
               onClick={clearAllFilters}
             >
@@ -419,7 +419,7 @@ const ProjectProperties: React.FC<ProjectPropertiesProps> = ({
 
         {/* Results Info */}
         <div className={styles.properties__results_info}>
-          {filteredProperties.length > 0 ? 
+          {filteredProperties.length > 0 ?
             t.showingResults
               .replace('{start}', ((currentPage - 1) * itemsPerPage + 1).toString())
               .replace('{end}', Math.min(currentPage * itemsPerPage, filteredProperties.length).toString())
@@ -434,55 +434,55 @@ const ProjectProperties: React.FC<ProjectPropertiesProps> = ({
             {paginatedProperties.map(property => (
               <div key={property.id} className={styles.properties__card}>
                 <div className={styles.properties__card_image}>
-                  <img 
-                    src={property.images[0]} 
-                    alt={isArabic ? property.nameAr : property.name}
+                  <img
+                    src={property.images[0]}
+                    alt={isArabic ? property.titleAr : property.titleEn}
                     className={styles.properties__card_img}
                   />
-                  <div className={styles.properties__card_status} style={{ backgroundColor: getStatusColor(property.status) }}>
-                    {t[property.status as keyof typeof t]}
+                  <div className={styles.properties__card_status} style={{ backgroundColor: getStatusColor(["available", "sold", "reserved"].find((item, index) => { return (property.status) == index && item })) }}>
+                    {t[["available", "sold", "reserved"].find((item, index) => { return property.status == index && item }) as keyof typeof t]}
                   </div>
-                  <button 
-                    className={`${styles.properties__card_favorite} ${isUnitFavorited(parseInt(property.id)) ? styles.properties__card_favorite_active : ''}`}
+                  <button
+                    className={`${styles.properties__card_favorite} ${isUnitFavorited((property.id)) ? styles.properties__card_favorite_active : ''}`}
                     onClick={(e) => handleFavoriteToggle(property, e)}
                     disabled={!isAuthenticated}
-                    title={isUnitFavorited(parseInt(property.id)) ? t.removeFromFavorites : t.addToFavorites}
+                    title={isUnitFavorited((property.id)) ? t.removeFromFavorites : t.addToFavorites}
                   >
-                    <Heart size={20} fill={isUnitFavorited(parseInt(property.id)) ? '#FBBF24' : 'none'} />
+                    <Heart size={20} fill={isUnitFavorited((property.id)) ? '#FBBF24' : 'none'} />
                   </button>
                 </div>
-                
+
                 <div className={styles.properties__card_content}>
                   <h3 className={styles.properties__card_name}>
-                    {isArabic ? property.nameAr : property.name}
+                    {isArabic ? property.titleAr : property.titleEn}
                   </h3>
                   <p className={styles.properties__card_type}>
-                    {isArabic ? property.typeAr : property.type}
+                    {property.type}
                   </p>
                   <p className={styles.properties__card_building}>
-                    {isArabic ? property.buildingAr : property.building} - {t.floor} {property.floor}
+                    {property.building} - {t.floor} {property.floor}
                   </p>
-                  
+
                   <div className={styles.properties__card_specs}>
                     <div className={styles.properties__card_spec}>
                       <Bed size={16} />
-                      <span>{property.bedrooms}</span>
+                      <span>{property.numberOfRooms}</span>
                     </div>
                     <div className={styles.properties__card_spec}>
                       <Bath size={16} />
-                      <span>{property.bathrooms}</span>
+                      <span>{property.numberOfBathrooms}</span>
                     </div>
                     <div className={styles.properties__card_spec}>
                       <Square size={16} />
                       <span>{property.area} {t.sqm}</span>
                     </div>
                   </div>
-                  
+
                   <div className={styles.properties__card_price}>
                     {formatPrice(property.price)} {t.sar}
                   </div>
-                  
-                  <Link 
+
+                  <Link
                     to={`/properties/${property.id}`}
                     className={styles.properties__card_btn}
                   >
@@ -509,7 +509,7 @@ const ProjectProperties: React.FC<ProjectPropertiesProps> = ({
                 .replace('{total}', filteredProperties.length.toString())
               }
             </div>
-            
+
             <div className={styles.properties__pagination_controls}>
               {/* First Page */}
               <button
@@ -530,14 +530,14 @@ const ProjectProperties: React.FC<ProjectPropertiesProps> = ({
               >
                 {isArabic ? <ChevronRight size={18} /> : <ChevronLeft size={18} />}
               </button>
-              
+
               {Array.from({ length: totalPages }, (_, i) => {
                 const pageNum = i + 1;
-                const isVisible = 
-                  pageNum === 1 || 
-                  pageNum === totalPages || 
+                const isVisible =
+                  pageNum === 1 ||
+                  pageNum === totalPages ||
                   (pageNum >= currentPage - 2 && pageNum <= currentPage + 2);
-                
+
                 if (!isVisible) {
                   if (pageNum === currentPage - 3 || pageNum === currentPage + 3) {
                     return (
@@ -548,7 +548,7 @@ const ProjectProperties: React.FC<ProjectPropertiesProps> = ({
                   }
                   return null;
                 }
-                
+
                 return (
                   <button
                     key={pageNum}
@@ -559,7 +559,7 @@ const ProjectProperties: React.FC<ProjectPropertiesProps> = ({
                   </button>
                 );
               })}
-              
+
               {/* Next Page */}
               <button
                 className={`${styles.properties__page_btn} ${styles.properties__page_btn_nav}`}

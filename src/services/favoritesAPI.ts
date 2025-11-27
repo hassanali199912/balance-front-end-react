@@ -1,40 +1,24 @@
 const API_BASE_URL = import.meta.env.VITE_API_BASE_URL || 'https://balancerealestate.runasp.net/api';
 
 export interface FavoriteUnit {
-  id: number;
-  name: string;
-  nameAr: string;
-  price: number;
-  area: number;
-  location: string;
-  locationAr: string;
-  image: string;
-  type: string;
-  typeAr: string;
-  bedrooms?: number;
-  bathrooms?: number;
-  isAvailable: boolean;
+  userId: string,
+  nameAr: string,
+  nameEn: string,
+  price: number,
+  location: string,
+  mainImageUrl: string,
+  projectId: number
 }
 
 export interface FavoriteProject {
-  id: number;
-  title: string;
-  titleAr: string;
-  description?: string;
-  descriptionAr?: string;
-  price: string;
-  priceAr: string;
-  location: string;
-  locationAr: string;
-  image: string;
-  status: string;
-  statusAr: string;
-  completionDate: string;
-  totalUnits?: number;
-  district?: string;
-  city?: string;
-  area?: string;
-  slug?: string;
+  userId: string,
+  nameAr: string,
+  nameEn: string,
+  price: number,
+  location: string,
+  mainImageUrl: string,
+  projectId: number
+
 }
 
 export interface UserFavoritesResponse {
@@ -61,12 +45,62 @@ export interface AddToFavoritesRequest {
   isAvailable: boolean;
 }
 
+
+export interface InterestedProject {
+  userId: string,
+  fullName: string,
+  phone: string,
+  email: string,
+  projectId: number,
+  methodId: number,
+  projectNameAr: string,
+  projectNameEn: string,
+  price: number,
+  mainImageUrl: string,
+  locationAr: string,
+  locationEn: string,
+  notes: string
+
+}
+
+export interface InterestedUnite {
+  userId: string,
+  fullName: string,
+  phone: string,
+  email: string,
+  methodId: number,
+  price: number,
+  mainImageUrl: string,
+  locationAr: string,
+  locationEn: string,
+  notes: string,
+  unitId: number,
+  unitTitleAr: string,
+  unitTitleEn: string,
+  isAvailible: boolean,
+
+}
+
+
+export interface InterestedAllResponse {
+  itemsProjects: InterestedProject[],
+  itemsUnits: InterestedUnite[],
+  totalCountProjects: number,
+  totalCountUnits: number
+}
+
+export interface RemoveData {
+  message: string
+}
+
+
+
 class FavoritesAPI {
   private baseURL: string;
   private token: string | null = null;
 
   constructor() {
-    this.baseURL = `${API_BASE_URL}/favorites`;
+    this.baseURL = `${API_BASE_URL}/`;
   }
 
   setToken(token: string | null) {
@@ -90,10 +124,10 @@ class FavoritesAPI {
 
     try {
       const response = await fetch(url, config);
-      
+
       if (!response.ok) {
         let errorMessage = `HTTP error! status: ${response.status}`;
-        
+
         try {
           const errorData = await response.json();
           // Handle different error response formats
@@ -108,11 +142,16 @@ class FavoritesAPI {
           // If response is not JSON, use status text
           errorMessage = response.statusText || errorMessage;
         }
-        
+
         throw new Error(errorMessage);
       }
 
-      return await response.json();
+      try {
+        const jsonData = await response.json();
+        return jsonData as T;
+      } catch {
+        return { message: "Operation successful." } as unknown as T;
+      }
     } catch (error) {
       console.error('Favorites API Error:', error);
       throw error;
@@ -121,22 +160,22 @@ class FavoritesAPI {
 
   // GET /favorites/user-units-projects/{userId}
   async getUserFavorites(userId: string): Promise<UserFavoritesResponse> {
-    return this.request<UserFavoritesResponse>(`/user-units-projects/${userId}`);
+    return this.request<UserFavoritesResponse>(`favorites/user-units-projects/${userId}`);
   }
 
   // GET /favorites/project/{userId}
   async getFavoriteProjects(userId: string): Promise<FavoriteProjectsResponse> {
-    return this.request<FavoriteProjectsResponse>(`/project/${userId}`);
+    return this.request<FavoriteProjectsResponse>(`favorites/project/${userId}`);
   }
 
   // GET /favorites/unit/{userId}
   async getFavoriteUnits(userId: string): Promise<FavoriteUnitsResponse> {
-    return this.request<FavoriteUnitsResponse>(`/unit/${userId}`);
+    return this.request<FavoriteUnitsResponse>(`favorites/unit/${userId}`);
   }
 
   // POST /favorites/unit
   async addUnitToFavorites(data: AddToFavoritesRequest): Promise<FavoriteUnitsResponse> {
-    return this.request<FavoriteUnitsResponse>('/unit', {
+    return this.request<FavoriteUnitsResponse>('favorites/unit', {
       method: 'POST',
       body: JSON.stringify(data),
     });
@@ -144,7 +183,7 @@ class FavoritesAPI {
 
   // POST /favorites/project
   async addProjectToFavorites(data: AddToFavoritesRequest): Promise<FavoriteProjectsResponse> {
-    return this.request<FavoriteProjectsResponse>('/project', {
+    return this.request<FavoriteProjectsResponse>('favorites/project', {
       method: 'POST',
       body: JSON.stringify(data),
     });
@@ -152,17 +191,40 @@ class FavoritesAPI {
 
   // PUT /favorites/unit?unitId={unitId}
   async removeUnitFromFavorites(unitId: number): Promise<FavoriteUnitsResponse> {
-    return this.request<FavoriteUnitsResponse>(`/unit?unitId=${unitId}`, {
+    return this.request<FavoriteUnitsResponse>(`favorites/unit?unitId=${unitId}`, {
       method: 'PUT',
     });
   }
 
   // PUT /favorites/project?projectId={projectId}
   async removeProjectFromFavorites(projectId: number): Promise<FavoriteProjectsResponse> {
-    return this.request<FavoriteProjectsResponse>(`/project?projectId=${projectId}`, {
+    return this.request<FavoriteProjectsResponse>(`favorites/project?projectId=${projectId}`, {
       method: 'PUT',
     });
   }
+
+
+  async getInterestedAll(userId: string): Promise<InterestedAllResponse> {
+    return this.request<InterestedAllResponse>(`interests/user-units-projects/${userId}`);
+  }
+
+  async removeUnitFromInterested(unitId: number): Promise<RemoveData> {
+    return this.request<RemoveData>(`interests/unit?unitId=${unitId}`, {
+      method: 'DELETE',
+    });
+  }
+  async removeProjectFromInterested(projectId: number): Promise<RemoveData> {
+    return this.request<RemoveData>(`interests/project?projectId=${projectId}`, {
+      method: 'DELETE',
+    });
+  }
+
+
+
+
+
+
+
 }
 
 export const favoritesAPI = new FavoritesAPI();

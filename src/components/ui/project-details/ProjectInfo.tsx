@@ -6,35 +6,27 @@ import { useFavorites } from '../../../contexts/useFavorites';
 import { useAuth } from '../../../contexts/useAuth';
 
 interface ProjectInfoProps {
-  project: {
-    id: string;
-    name: string;
-    nameAr: string;
-    location: string;
-    locationAr: string;
-    category: string;
-    categoryAr: string;
-    isFavorited: boolean;
-    completionDate: string;
+  project?: {
+    id?: number | null;
+    name?: string | null;
+    nameAr?: string | null;
+    location?: string | null;
+    locationAr?: string | null;
+    category?: string | null;
+    categoryAr?: string | null;
+    isFavorited?: boolean | null;
+    completionDate?: string | null;
   };
-  onFavoriteToggle?: () => void; // Make optional since we'll handle internally
+  onFavoriteToggle?: () => void;
 }
 
 const ProjectInfo: React.FC<ProjectInfoProps> = ({ project, onFavoriteToggle }) => {
   const { currentLanguage } = useLanguage();
   const { isAuthenticated } = useAuth();
-  const { 
-    isProjectFavorited,
-    addProjectToFavorites,
-    removeProjectFromFavorites
-  } = useFavorites();
-  
+  const { isProjectFavorited, addProjectToFavorites, removeProjectFromFavorites } = useFavorites();
+
   const isArabic = currentLanguage.code === 'ar';
-  const [showToast, setShowToast] = useState(false);
   const [isTogglingFavorite, setIsTogglingFavorite] = useState(false);
-  
-  // Check if project is actually favorited from favorites context
-  const isFavorited = isProjectFavorited(parseInt(project.id));
 
   const content = {
     en: {
@@ -45,7 +37,8 @@ const ProjectInfo: React.FC<ProjectInfoProps> = ({ project, onFavoriteToggle }) 
       completionDate: 'Completion Date',
       projectInfo: 'Project Information',
       addedToFavorites: 'Added to favorites!',
-      removedFromFavorites: 'Removed from favorites!'
+      removedFromFavorites: 'Removed from favorites!',
+      notAvailable: 'N/A',
     },
     ar: {
       addToFavorites: 'أضف للمفضلة',
@@ -55,46 +48,52 @@ const ProjectInfo: React.FC<ProjectInfoProps> = ({ project, onFavoriteToggle }) 
       completionDate: 'تاريخ الانتهاء',
       projectInfo: 'معلومات المشروع',
       addedToFavorites: 'تم الإضافة للمفضلة!',
-      removedFromFavorites: 'تم الإزالة من المفضلة!'
-    }
+      removedFromFavorites: 'تم الإزالة من المفضلة!',
+      notAvailable: 'غير متوفر',
+    },
   };
 
   const t = isArabic ? content.ar : content.en;
 
-  const handleFavoriteClick = async () => {
-    if (!isAuthenticated) {
-      // You could show a login prompt here or redirect to login
-      return;
-    }
+  // لو المشروع فاضي تمامًا
+  if (!project) {
+    return (
+      <section className={styles.info} dir={isArabic ? 'rtl' : 'ltr'}>
+        <p className={styles.info__empty}>{t.notAvailable}</p>
+      </section>
+    );
+  }
 
+  const projectId = project.id ?? 0;
+  const isFavorited = projectId ? isProjectFavorited(projectId) : false;
+
+  const handleFavoriteClick = async () => {
+    if (!isAuthenticated || !projectId) return;
     if (isTogglingFavorite) return;
-    
+
     setIsTogglingFavorite(true);
-    
+
     try {
-      const projectId = parseInt(project.id);
-      
       if (isFavorited) {
         await removeProjectFromFavorites(projectId);
       } else {
         await addProjectToFavorites(projectId);
       }
-      
-      // Call the optional external handler if provided
-      if (onFavoriteToggle) {
-        onFavoriteToggle();
-      }
-      
+
+      onFavoriteToggle?.();
     } catch (error) {
-      console.error('Error toggling project favorite:', error);
+      console.error('Error toggling favorite:', error);
     } finally {
       setIsTogglingFavorite(false);
     }
   };
 
-  const formatDate = (dateString: string) => {
+  const formatDate = (dateString?: string | null) => {
+    if (!dateString) return t.notAvailable;
     const date = new Date(dateString);
-    return isArabic 
+    if (isNaN(date.getTime())) return t.notAvailable;
+
+    return isArabic
       ? date.toLocaleDateString('ar-SA', { year: 'numeric', month: 'long', day: 'numeric' })
       : date.toLocaleDateString('en-US', { year: 'numeric', month: 'long', day: 'numeric' });
   };
@@ -105,23 +104,27 @@ const ProjectInfo: React.FC<ProjectInfoProps> = ({ project, onFavoriteToggle }) 
         <div className={styles.info__header}>
           <div className={styles.info__title_section}>
             <h2 className={styles.info__title}>
-              {isArabic ? project.nameAr : project.name}
+              {isArabic
+                ? project.nameAr || t.notAvailable
+                : project.name || t.notAvailable}
             </h2>
             <p className={styles.info__subtitle}>{t.projectInfo}</p>
           </div>
-          
-          <button 
-            className={`${styles.info__favorite_btn} ${isFavorited ? styles.info__favorite_btn_active : ''}`}
-            onClick={handleFavoriteClick}
-            disabled={isTogglingFavorite || !isAuthenticated}
-            title={isFavorited ? t.removeFromFavorites : t.addToFavorites}
-          >
-            <Heart 
-              size={24} 
-              fill={isFavorited ? '#ef4444' : 'none'} 
-              color={isFavorited ? '#ef4444' : '#64748b'}
-            />
-          </button>
+
+          {projectId ? (
+            <button
+              className={`${styles.info__favorite_btn} ${isFavorited ? styles.info__favorite_btn_active : ''}`}
+              onClick={handleFavoriteClick}
+              disabled={isTogglingFavorite || !isAuthenticated}
+              title={isFavorited ? t.removeFromFavorites : t.addToFavorites}
+            >
+              <Heart
+                size={24}
+                fill={isFavorited ? '#ef4444' : 'none'}
+                color={isFavorited ? '#ef4444' : '#64748b'}
+              />
+            </button>
+          ) : null}
         </div>
 
         <div className={styles.info__content}>
@@ -133,7 +136,9 @@ const ProjectInfo: React.FC<ProjectInfoProps> = ({ project, onFavoriteToggle }) 
                 <h3 className={styles.info__item_title}>{t.category}</h3>
               </div>
               <p className={styles.info__item_value}>
-                {isArabic ? project.categoryAr : project.category}
+                {isArabic
+                  ? project.categoryAr || t.notAvailable
+                  : project.category || t.notAvailable}
               </p>
             </div>
 
@@ -144,7 +149,9 @@ const ProjectInfo: React.FC<ProjectInfoProps> = ({ project, onFavoriteToggle }) 
                 <h3 className={styles.info__item_title}>{t.location}</h3>
               </div>
               <p className={styles.info__item_value}>
-                {isArabic ? project.locationAr : project.location}
+                {isArabic
+                  ? project.locationAr || t.notAvailable
+                  : project.location || t.notAvailable}
               </p>
             </div>
 
@@ -160,13 +167,6 @@ const ProjectInfo: React.FC<ProjectInfoProps> = ({ project, onFavoriteToggle }) 
             </div>
           </div>
         </div>
-
-        {/* Toast Notification */}
-        {showToast && (
-          <div className={`${styles.info__toast} ${styles.info__toast_show}`}>
-            {project.isFavorited ? t.addedToFavorites : t.removedFromFavorites}
-          </div>
-        )}
       </div>
     </section>
   );

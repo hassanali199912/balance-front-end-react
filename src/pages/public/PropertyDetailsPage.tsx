@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { useParams } from 'react-router-dom';
+import { useNavigate, useParams } from 'react-router-dom';
 import LoadingSpinner from '../../components/ui/common/LoadingSpinner';
 import Toast from '../../components/ui/common/Toast';
 import PageBreadcrumb from '../../components/ui/shared/PageBreadcrumb';
@@ -14,6 +14,10 @@ import { useLanguage } from '../../contexts/useLanguage';
 import { useFavorites } from '../../contexts/useFavorites';
 import { useToast } from '../../contexts/useToast';
 import styles from '../../styles/components/property-details/PropertyDetailsPage.module.css';
+import { useDispatch, useSelector } from 'react-redux';
+import { AppDispatch, RootState } from '../../store';
+import { getUnitById } from '../../store/slices/UnitSlice';
+import { getStatusUnitText, getTypeText, returnUnitTypeText } from '../../helpers/helpers';
 
 // Mock data - في التطبيق الحقيقي سيأتي من API
 const mockPropertyData = {
@@ -153,12 +157,13 @@ const mockPropertyData = {
 };
 
 const PropertyDetailsPage: React.FC = () => {
+  //#region Code 
   const { id } = useParams<{ id: string }>();
   const { currentLanguage } = useLanguage();
   const { isUnitFavorited, addUnitToFavorites, removeUnitFromFavorites } = useFavorites();
   const { showToast } = useToast();
   const isArabic = currentLanguage.code === 'ar';
-  
+
   const [propertyData, setPropertyData] = useState(mockPropertyData);
   const [loading, setLoading] = useState(true);
   const [isTogglingFavorite, setIsTogglingFavorite] = useState(false);
@@ -182,34 +187,34 @@ const PropertyDetailsPage: React.FC = () => {
 
   const t = isArabic ? content.ar : content.en;
 
-  useEffect(() => {
-    // محاكاة تحميل البيانات من API باستخدام slug/id
-    const fetchPropertyData = async () => {
-      setLoading(true);
-      
-      try {
-        // في التطبيق الحقيقي:
-        // const response = await api.getPropertyBySlug(id);
-        // setPropertyData(response.data);
-        
-        // محاكاة وقت التحميل
-        await new Promise(resolve => setTimeout(resolve, 1500));
-        
-        // في الوقت الحالي نستخدم نفس البيانات، لكن يمكن تخصيصها حسب الـ slug
-        setPropertyData({
-          ...mockPropertyData,
-          id: id || '1', // استخدام id من URL
-        });
-        
-      } catch (error) {
-        console.error('Error fetching property data:', error);
-      } finally {
-        setLoading(false);
-      }
-    };
+  // useEffect(() => {
+  //   // محاكاة تحميل البيانات من API باستخدام slug/id
+  //   const fetchPropertyData = async () => {
+  //     setLoading(true);
 
-    fetchPropertyData();
-  }, [id]);
+  //     try {
+  //       // في التطبيق الحقيقي:
+  //       // const response = await api.getPropertyBySlug(id);
+  //       // setPropertyData(response.data);
+
+  //       // محاكاة وقت التحميل
+  //       await new Promise(resolve => setTimeout(resolve, 1500));
+
+  //       // في الوقت الحالي نستخدم نفس البيانات، لكن يمكن تخصيصها حسب الـ slug
+  //       setPropertyData({
+  //         ...mockPropertyData,
+  //         id: id || '1', // استخدام id من URL
+  //       });
+
+  //     } catch (error) {
+  //       console.error('Error fetching property data:', error);
+  //     } finally {
+  //       setLoading(false);
+  //     }
+  //   };
+
+  //   fetchPropertyData();
+  // }, [id]);
 
   const handleFavoriteToggle = async () => {
     // This function is now optional and mainly for any additional logic
@@ -222,11 +227,57 @@ const PropertyDetailsPage: React.FC = () => {
     // Not needed anymore as we use ToastContext
   };
 
-  if (loading) {
+  //#endregion Code
+
+  //#region Fetch Data
+  const { single: {
+    details: unitData, loading: unitLoading, error: unitError
+  } } = useSelector((state: RootState) => state.units);
+  const navigate = useNavigate();
+  const dispatch = useDispatch<AppDispatch>()
+
+  useEffect(() => {
+    if (!id) {
+      navigate("/notFound");
+      return;
+    }
+
+    const unitId = parseInt(id);
+    if (isNaN(unitId) || unitId <= 0) {
+      navigate("/notFound");
+      return;
+    }
+    dispatch(getUnitById(unitId)).then(() => {
+      // dispatch(getUnitsAPi({
+      //   ProjectId: projectId
+      // }))
+    })
+      .catch(() => {
+        navigate("/notFound");
+      });
+  }, [id, dispatch, navigate]);
+
+  useEffect(() => {
+    if (!unitLoading && unitError) {
+      navigate("/notFound");
+    }
+  }, [unitLoading, unitError, navigate]);
+
+  useEffect(() => {
+    console.log("This is Data", unitData);
+
+  }, [unitData])
+
+
+
+  //#endregion Fetch Data 
+
+
+  if (unitLoading) {
     return (
       <div className={styles.loadingContainer}>
         <div className="spinner-wrapper">
-          <LoadingSpinner 
+          <LoadingSpinner
             text={t.loadingProperty}
             size="large"
             overlay={false}
@@ -239,44 +290,44 @@ const PropertyDetailsPage: React.FC = () => {
   return (
     <div className={styles['property-details-page']}>
       {/* Breadcrumb with Hero Background */}
-      <PageBreadcrumb 
-        title={propertyData.name}
-        titleAr={propertyData.nameAr}
-        location={propertyData.location}
-        locationAr={propertyData.locationAr}
-        backgroundImage={propertyData.images[0]}
-        propertyType={propertyData.type}
-        propertyTypeAr={propertyData.typeAr}
-        projectName={propertyData.projectName}
-        projectNameAr={propertyData.projectNameAr}
-        projectSlug={propertyData.projectSlug}
+      <PageBreadcrumb
+        title={unitData?.titleEn || ""}
+        titleAr={unitData?.titleAr || ""}
+        location={unitData?.descriptionEn || ""}
+        locationAr={unitData?.descriptionAr || ""}
+        backgroundImage={unitData?.mainImageUrl || ""}
+        propertyType={getTypeText(unitData?.type || 0)}
+        propertyTypeAr={getTypeText(unitData?.type || 0)}
+        projectName={unitData?.projectNameEn || ""}
+        projectNameAr={unitData?.projectNameAr || ""}
+        projectSlug={unitData?.id + "" || ""}
       />
 
       {/* Property Gallery */}
-      <PropertyGallery 
-        images={propertyData.images}
-        propertyName={propertyData.name}
-        propertyNameAr={propertyData.nameAr}
+      <PropertyGallery
+        images={unitData?.images || []}
+        propertyName={unitData?.projectNameEn || ""}
+        propertyNameAr={unitData?.projectNameAr || ""}
       />
 
       {/* Property Info */}
-      <PropertyInfo 
-        propertyId={propertyData.id}
-        title={propertyData.name}
-        titleAr={propertyData.nameAr}
-        location={propertyData.location}
-        locationAr={propertyData.locationAr}
-        price={propertyData.price}
+      <PropertyInfo
+        propertyId={unitData?.id + "" || ""}
+        title={unitData?.titleEn || ""}
+        titleAr={unitData?.titleAr || ""}
+        location={unitData?.descriptionEn || ""}
+        locationAr={unitData?.descriptionAr || ""}
+        price={unitData?.price || 0}
         priceType="sale"
-        bedrooms={propertyData.bedrooms}
-        bathrooms={propertyData.bathrooms}
-        area={propertyData.area}
+        bedrooms={unitData?.numberOfRooms || 0}
+        bathrooms={unitData?.numberOfBathrooms || 0}
+        area={unitData?.area || 0}
         yearBuilt={propertyData.overview?.yearBuilt}
-        propertyType={propertyData.type}
-        propertyTypeAr={propertyData.typeAr}
-        availability={propertyData.status}
-        features={propertyData.features}
-        featuresAr={propertyData.featuresAr}
+        propertyType={getTypeText(unitData?.type || 0)}
+        propertyTypeAr={getTypeText(unitData?.type || 0)}
+        availability={returnUnitTypeText(unitData?.status)}
+        features={unitData?.features ? unitData?.features.map(item => item.nameEn) : []}
+        featuresAr={unitData?.features ? unitData?.features.map(item => item.nameAr) : []}
         amenities={propertyData.amenities || []}
         amenitiesAr={propertyData.amenitiesAr || []}
         isFavorite={isUnitFavorited(parseInt(id || '1'))}
@@ -285,15 +336,15 @@ const PropertyDetailsPage: React.FC = () => {
       />
 
       {/* Property Description */}
-      <PropertyDescription 
-        description={propertyData.description}
-        descriptionAr={propertyData.descriptionAr}
-        highlights={propertyData.highlights}
-        highlightsAr={propertyData.highlightsAr}
+      <PropertyDescription
+        description={unitData?.descriptionEn || ""}
+        descriptionAr={unitData?.descriptionAr || ""}
+        highlights={[]}
+        highlightsAr={[]}
       />
 
       {/* Property Overview */}
-      <PropertyOverview 
+      <PropertyOverview
         propertyId={propertyData.id}
         developer={propertyData.developer || 'Unknown Developer'}
         developerAr={propertyData.developerAr || 'مطور غير معروف'}
@@ -311,7 +362,7 @@ const PropertyDetailsPage: React.FC = () => {
 
       {/* Property Video */}
       {propertyData.videoUrl && (
-        <PropertyVideo 
+        <PropertyVideo
           videoUrl={propertyData.videoUrl}
           title={propertyData.name}
           titleAr={propertyData.nameAr}
@@ -319,9 +370,9 @@ const PropertyDetailsPage: React.FC = () => {
       )}
 
       {/* Property Location */}
-      <PropertyLocationMap 
-        latitude={propertyData.coordinates?.lat}
-        longitude={propertyData.coordinates?.lng}
+      <PropertyLocationMap
+        latitude={unitData?.latitude || 0}
+        longitude={unitData?.longitude || 0}
         address={propertyData.location}
         addressAr={propertyData.locationAr}
         city="Riyadh"
@@ -331,14 +382,15 @@ const PropertyDetailsPage: React.FC = () => {
       />
 
       {/* Contact Agent */}
-      <PropertyContact 
-        propertyTitle={propertyData.name}
-        propertyTitleAr={propertyData.nameAr}
-        agentName={propertyData.agent.name}
-        agentNameAr={propertyData.agent.nameAr}
+      <PropertyContact
+        propertyTitle={unitData?.titleEn || ""}
+        propertyTitleAr={unitData?.titleAr || ""}
+        agentName={unitData?.assignedEmployees?.[0]?.fullName || ""}
+        agentNameAr={unitData?.assignedEmployees?.[0]?.fullName || ""}
         agentPhone={propertyData.agent.phone}
         agentEmail={propertyData.agent.email}
         agentPhoto={propertyData.agent.image}
+        propertyId={parseInt(id)}
       />
     </div>
   );

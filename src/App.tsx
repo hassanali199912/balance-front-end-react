@@ -5,7 +5,8 @@ import ToastContainer from './components/ui/ToastContainer'
 import ProtectedRoute from './components/auth/ProtectedRoute'
 import GoogleAuthCallback from './components/auth/GoogleAuthCallback'
 import LoadingSpinner from './components/ui/LoadingSpinner'
-
+import { store } from "./store/index";
+import { Provider as StoreProvider } from "react-redux";
 // Lazy load pages for better performance
 const HomePage = React.lazy(() => import('./pages/public/HomePage'))
 const ProjectsPage = React.lazy(() => import('./pages/public/ProjectsPage'))
@@ -33,63 +34,59 @@ function App() {
     <ThemeProvider>
       <LanguageProvider>
         <ToastProvider>
-          <AuthProvider>
-            <FavoritesProvider>
-              <Router>
-                <div className="app">
-                  <Suspense fallback={<LoadingSpinner />}>
-                    <Routes>
-                      {/* Google OAuth Callback Route (no layout needed) */}
-                      <Route path="/auth/google/callback" element={<GoogleAuthCallback />} />
-                      {/* Public Routes with Layout */}
-                      <Route path="/" element={<PublicLayout />}>
-                      <Route index element={<HomePage />} />
-                      <Route path="projects" element={<ProjectsPage />} />
-                      <Route path="properties" element={<PropertiesPage />} />
-                      <Route path="projects/:id" element={<ProjectDetailsPage />} />
-                      <Route path="properties/:id" element={<PropertyDetailsPage />} />
-                      <Route path="contact" element={<ContactPage />} />
-                      <Route path="about" element={<AboutPage />} />
-                      
-                      {/* Authentication Routes (protected - require NOT being logged in) */}
-                      <Route path="signin" element={
-                        <ProtectedRoute requireAuth={false}>
-                          <SignInPage />
-                        </ProtectedRoute>
-                      } />
-                      <Route path="signup" element={
-                        <ProtectedRoute requireAuth={false}>
-                          <SignUpPage />
-                        </ProtectedRoute>
-                      } />
-                      <Route path="forgot-password" element={
-                        <ProtectedRoute requireAuth={false}>
-                          <ForgotPasswordPage />
-                        </ProtectedRoute>
-                      } />
-                      <Route path="reset-password" element={
-                        <ProtectedRoute requireAuth={false}>
-                          <ResetPasswordPage />
-                        </ProtectedRoute>
-                      } />
-                      
-                      {/* User Profile Route (protected - requires login) */}
-                      <Route path="profile" element={
-                        <ProtectedRoute requireAuth={true}>
-                          <ProfilePage />
-                        </ProtectedRoute>
-                      } />
-                      
-                      {/* 404 Not Found Page */}
-                      <Route path="*" element={<NotFoundPage />} />
-                    </Route>
-                  </Routes>
-                  </Suspense>
-                  <ToastContainer />
-                </div>
-              </Router>
-            </FavoritesProvider>
-          </AuthProvider>
+          <StoreProvider store={store}>
+            <AuthProvider>
+              <FavoritesProvider>
+                <Router>
+                  <div className="app">
+                    <Suspense fallback={<LoadingSpinner />}>
+                      <Routes>
+                        {/* Google OAuth Callback Route (no layout needed) */}
+                        <Route path="/auth/google/callback" element={<GoogleAuthCallback />} />
+                        <Route path="/" element={<PublicLayout />}>
+                          <Route index element={<HomePage />} />
+                          <Route path="projects" element={<ProjectsPage />} />
+                          <Route path="properties" element={<PropertiesPage />} />
+                          <Route path="projects/:id" element={<ProjectDetailsPage />} />
+                          <Route path="properties/:id" element={<PropertyDetailsPage />} />
+                          <Route path="contact" element={<ContactPage />} />
+                          <Route path="about" element={<AboutPage />} />
+                          <Route path="signin" element={
+                            <ProtectedRoute requireAuth={false}>
+                              <SignInPage />
+                            </ProtectedRoute>
+                          } />
+                          <Route path="signup" element={
+                            <ProtectedRoute requireAuth={false}>
+                              <SignUpPage />
+                            </ProtectedRoute>
+                          } />
+                          <Route path="forgot-password" element={
+                            <ProtectedRoute requireAuth={false}>
+                              <ForgotPasswordPage />
+                            </ProtectedRoute>
+                          } />
+                          <Route path="reset-password" element={
+                            <ProtectedRoute requireAuth={false}>
+                              <ResetPasswordPage />
+                            </ProtectedRoute>
+                          } />
+                          <Route path="profile" element={
+                            <ProtectedRoute requireAuth={true}>
+                              <ProfilePage />
+                            </ProtectedRoute>
+                          } />
+                          <Route path="*" element={<NotFoundPage />} />
+                        </Route>
+                      </Routes>
+                    </Suspense>
+                    <ToastContainer />
+                  </div>
+                </Router>
+              </FavoritesProvider>
+            </AuthProvider>
+          </StoreProvider>
+
         </ToastProvider>
       </LanguageProvider>
     </ThemeProvider>

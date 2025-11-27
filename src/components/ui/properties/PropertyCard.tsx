@@ -4,6 +4,8 @@ import { MapPin, Square, Bed, Bath, Heart, Eye } from 'lucide-react';
 import { useLanguage } from '../../../contexts/useLanguage';
 import { useFavorites } from '../../../contexts/useFavorites';
 import styles from '../../../styles/components/properties/PropertyCard.module.css';
+import { Unit } from '../../../store/slices/UnitSlice';
+import { getTypeText } from '../../../helpers/helpers';
 
 export interface PropertyCardData {
   id: number;
@@ -32,25 +34,25 @@ export interface PropertyCardData {
 }
 
 interface PropertyCardProps {
-  property: PropertyCardData;
+  property: Unit;
   onViewDetails?: (id: number) => void;
   showLocation?: boolean;
   className?: string;
   animationDelay?: number;
 }
 
-const PropertyCard: React.FC<PropertyCardProps> = ({ 
-  property, 
+const PropertyCard: React.FC<PropertyCardProps> = ({
+  property,
   onViewDetails,
   showLocation = true,
   className = '',
   animationDelay = 0
 }) => {
   const { currentLanguage } = useLanguage();
-  const { 
-    isUnitFavorited, 
-    addUnitToFavorites, 
-    removeUnitFromFavorites 
+  const {
+    isUnitFavorited,
+    addUnitToFavorites,
+    removeUnitFromFavorites
   } = useFavorites();
   const isArabic = currentLanguage.code === 'ar';
   const isFavorited = isUnitFavorited(property.id);
@@ -85,22 +87,21 @@ const PropertyCard: React.FC<PropertyCardProps> = ({
   const t = isArabic ? content.ar : content.en;
 
   // Handle different data formats
-  const propertyTitle = isArabic 
-    ? (property.titleAr || property.nameAr || property.titleEn || property.name || 'Untitled')
-    : (property.titleEn || property.name || property.titleAr || property.nameAr || 'Untitled');
-    
-  const propertyLocation = isArabic
-    ? (property.locationAr || property.locationEn || property.location || '')
-    : (property.locationEn || property.location || property.locationAr || '');
-    
-  const propertyType = isArabic
-    ? (property.typeAr || property.typeEn || property.type || '')
-    : (property.typeEn || property.type || property.typeAr || '');
+  const propertyTitle = isArabic
+    ? (property.titleAr || 'Untitled')
+    : (property.titleEn || 'Untitled');
+
+  // const propertyLocation = isArabic
+  //   ? (property.locationAr || property.locationEn || property.location || '')
+  //   : (property.locationEn || property.location || property.locationAr || '');
+
+
+
 
   const handleFavoriteClick = async (e: React.MouseEvent) => {
     e.preventDefault();
     e.stopPropagation();
-    
+
     try {
       if (isFavorited) {
         await removeUnitFromFavorites(property.id);
@@ -124,22 +125,22 @@ const PropertyCard: React.FC<PropertyCardProps> = ({
   };
 
   return (
-    <div 
-      className={`${styles.property_card} ${className}`} 
+    <div
+      className={`${styles.property_card} ${className}`}
       dir={isArabic ? 'rtl' : 'ltr'}
       style={{ animationDelay: `${animationDelay}s` }}
     >
       {/* Image Container */}
       <div className={styles.property_card__image_container}>
-        <img 
-          src={property.image} 
+        <img
+          src={property.mainImageUrl}
           alt={propertyTitle}
           className={styles.property_card__image}
         />
-        
+
         {/* Status Badge */}
-        <div className={`${styles.property_card__status} ${property.isAvailable ? styles.property_card__status_available : styles.property_card__status_unavailable}`}>
-          {property.isAvailable ? t.available : t.notAvailable}
+        <div className={`${styles.property_card__status} ${property.isActive ? styles.property_card__status_available : styles.property_card__status_unavailable}`}>
+          {property.isActive ? t.available : t.notAvailable}
         </div>
 
         {/* Favorite Button */}
@@ -148,8 +149,8 @@ const PropertyCard: React.FC<PropertyCardProps> = ({
           onClick={handleFavoriteClick}
           title={isFavorited ? t.removeFromFavorites : t.addToFavorites}
         >
-          <Heart 
-            size={18} 
+          <Heart
+            size={18}
             fill={isFavorited ? '#ef4444' : 'none'}
             stroke={isFavorited ? '#ef4444' : 'currentColor'}
           />
@@ -157,7 +158,7 @@ const PropertyCard: React.FC<PropertyCardProps> = ({
 
         {/* View Overlay */}
         <div className={styles.property_card__overlay}>
-          <button 
+          <button
             className={styles.property_card__view_btn}
             onClick={handleViewClick}
           >
@@ -181,16 +182,16 @@ const PropertyCard: React.FC<PropertyCardProps> = ({
 
         {/* Type */}
         <div className={styles.property_card__type}>
-          {propertyType}
+          {getTypeText(property.type).toString()}
         </div>
 
         {/* Location */}
-        {showLocation && (
+        {/* {showLocation && (
           <div className={styles.property_card__location}>
             <MapPin size={14} />
             <span>{propertyLocation}</span>
           </div>
-        )}
+        )} */}
 
         {/* Details */}
         <div className={styles.property_card__details}>
@@ -198,32 +199,32 @@ const PropertyCard: React.FC<PropertyCardProps> = ({
             <Square size={14} />
             <span>{property.area} {t.sqm}</span>
           </div>
-          
-          {property.bedrooms && (
+
+          {property.numberOfRooms && (
             <div className={styles.property_card__detail}>
               <Bed size={14} />
-              <span>{property.bedrooms}</span>
+              <span>{property.numberOfRooms}</span>
             </div>
           )}
-          
-          {property.bathrooms && (
+
+          {property.numberOfBathrooms && (
             <div className={styles.property_card__detail}>
               <Bath size={14} />
-              <span>{property.bathrooms}</span>
+              <span>{property.numberOfBathrooms}</span>
             </div>
           )}
         </div>
 
         {/* Action Button */}
-        {property.slug ? (
-          <Link 
-            to={`/properties/${property.slug}`}
+        {property.id ? (
+          <Link
+            to={`/properties/${property.id}`}
             className={styles.property_card__action}
           >
             {t.viewDetails}
           </Link>
         ) : (
-          <button 
+          <button
             className={styles.property_card__action}
             onClick={handleViewClick}
           >

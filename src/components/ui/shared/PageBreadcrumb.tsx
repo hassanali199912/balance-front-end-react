@@ -5,16 +5,16 @@ import styles from '../../../styles/components/shared/PageBreadcrumb.module.css'
 import { useLanguage } from '../../../contexts/useLanguage';
 
 interface PageBreadcrumbProps {
-  title: string;
-  titleAr: string;
-  location?: string;
-  locationAr?: string;
-  backgroundImage?: string;
-  propertyType?: string;
-  propertyTypeAr?: string;
-  projectName?: string;
-  projectNameAr?: string;
-  projectSlug?: string;
+  title?: string | null;
+  titleAr?: string | null;
+  location?: string | null;
+  locationAr?: string | null;
+  backgroundImage?: string | null;
+  propertyType?: string | null;
+  propertyTypeAr?: string | null;
+  projectName?: string | null;
+  projectNameAr?: string | null;
+  projectSlug?: string | null;
 }
 
 const PageBreadcrumb: React.FC<PageBreadcrumbProps> = ({
@@ -27,15 +27,16 @@ const PageBreadcrumb: React.FC<PageBreadcrumbProps> = ({
   propertyTypeAr,
   projectName,
   projectNameAr,
-  projectSlug
+  projectSlug,
 }) => {
   const { currentLanguage } = useLanguage();
   const isArabic = currentLanguage.code === 'ar';
   const routeLocation = useLocation();
-  
+
   const isProjectsPage = routeLocation.pathname === '/projects';
   const isPropertyDetailsPage = routeLocation.pathname.includes('/properties/');
-  const isProjectDetailsPage = routeLocation.pathname.includes('/projects/') && !isProjectsPage;
+  const isProjectDetailsPage =
+    routeLocation.pathname.includes('/projects/') && !isProjectsPage;
 
   const content = {
     en: {
@@ -43,15 +44,17 @@ const PageBreadcrumb: React.FC<PageBreadcrumbProps> = ({
       projects: 'Projects',
       properties: 'Properties',
       projectDetails: 'Project Details',
-      propertyDetails: 'Property Details'
+      propertyDetails: 'Property Details',
+      unknown: 'Unknown',
     },
     ar: {
       home: 'الرئيسية',
       projects: 'المشاريع',
       properties: 'العقارات',
       projectDetails: 'تفاصيل المشروع',
-      propertyDetails: 'تفاصيل العقار'
-    }
+      propertyDetails: 'تفاصيل العقار',
+      unknown: 'غير محدد',
+    },
   };
 
   const t = isArabic ? content.ar : content.en;
@@ -60,8 +63,13 @@ const PageBreadcrumb: React.FC<PageBreadcrumbProps> = ({
     if (isProjectsPage) return t.projects;
     if (isProjectDetailsPage) return t.projectDetails;
     if (isPropertyDetailsPage) return t.propertyDetails;
-    return isArabic ? titleAr : title;
+    return (isArabic ? titleAr : title) || t.unknown;
   };
+
+  const safeTitle = (isArabic ? titleAr : title) || t.unknown;
+  const safeProjectName = (isArabic ? projectNameAr : projectName) || t.unknown;
+  const safePropertyType = (isArabic ? propertyTypeAr : propertyType) || '';
+  const safeLocation = (isArabic ? locationAr : location) || '';
 
   const getBreadcrumbNavigation = () => {
     const homeLink = (
@@ -71,7 +79,9 @@ const PageBreadcrumb: React.FC<PageBreadcrumbProps> = ({
       </Link>
     );
 
-    const separator = <ChevronRight size={16} className={styles.breadcrumb__separator} />;
+    const separator = (
+      <ChevronRight size={16} className={styles.breadcrumb__separator} />
+    );
 
     if (isProjectsPage) {
       return (
@@ -99,7 +109,6 @@ const PageBreadcrumb: React.FC<PageBreadcrumbProps> = ({
 
     if (isPropertyDetailsPage) {
       if (projectName && projectSlug) {
-        // Property within a project: Home / Projects / Project Name / Property Name
         return (
           <>
             {homeLink}
@@ -109,16 +118,13 @@ const PageBreadcrumb: React.FC<PageBreadcrumbProps> = ({
             </Link>
             {separator}
             <Link to={`/projects/${projectSlug}`} className={styles.breadcrumb__link}>
-              {isArabic ? projectNameAr : projectName}
+              {safeProjectName}
             </Link>
             {separator}
-            <span className={styles.breadcrumb__current}>
-              {isArabic ? titleAr : title}
-            </span>
+            <span className={styles.breadcrumb__current}>{safeTitle}</span>
           </>
         );
       } else {
-        // Standalone property: Home / Properties / Property Name
         return (
           <>
             {homeLink}
@@ -127,15 +133,12 @@ const PageBreadcrumb: React.FC<PageBreadcrumbProps> = ({
               {t.properties}
             </Link>
             {separator}
-            <span className={styles.breadcrumb__current}>
-              {isArabic ? titleAr : title}
-            </span>
+            <span className={styles.breadcrumb__current}>{safeTitle}</span>
           </>
         );
       }
     }
 
-    // Default breadcrumb for other pages
     return (
       <>
         {homeLink}
@@ -146,34 +149,28 @@ const PageBreadcrumb: React.FC<PageBreadcrumbProps> = ({
   };
 
   return (
-    <section 
-      className={styles.breadcrumb} 
-      style={{ backgroundImage: backgroundImage ? `url(${backgroundImage})` : undefined }}
+    <section
+      className={styles.breadcrumb}
+      style={{
+        backgroundImage: backgroundImage ? `url(${backgroundImage})` : undefined,
+      }}
       dir={isArabic ? 'rtl' : 'ltr'}
     >
       <div className={styles.breadcrumb__overlay}></div>
       <div className={styles.breadcrumb__container}>
-        {/* Breadcrumb Navigation */}
-        <nav className={styles.breadcrumb__nav}>
-          {getBreadcrumbNavigation()}
-        </nav>
+        <nav className={styles.breadcrumb__nav}>{getBreadcrumbNavigation()}</nav>
 
-        {/* Page Info */}
         <div className={styles.breadcrumb__content}>
           <div className={styles.breadcrumb__header}>
-            {propertyType && (
-              <div className={styles.breadcrumb__type}>
-                {isArabic ? propertyTypeAr : propertyType}
-              </div>
+            {safePropertyType && (
+              <div className={styles.breadcrumb__type}>{safePropertyType}</div>
             )}
-            <h1 className={styles.breadcrumb__title}>
-              {isArabic ? titleAr : title}
-            </h1>
+            <h1 className={styles.breadcrumb__title}>{safeTitle}</h1>
           </div>
-          {location && (
+          {safeLocation && (
             <div className={styles.breadcrumb__location}>
               <MapPin size={20} />
-              <span>{isArabic ? locationAr : location}</span>
+              <span>{safeLocation}</span>
             </div>
           )}
         </div>

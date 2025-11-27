@@ -1,7 +1,10 @@
-import React, { useState } from 'react';
+import React, { useEffect, useState } from 'react';
 import { Filter, X } from 'lucide-react';
 import styles from '../../../styles/components/projects/ProjectFilter.module.css';
 import { useLanguage } from '../../../contexts/useLanguage';
+import { useDispatch, useSelector } from 'react-redux';
+import { AppDispatch, RootState } from '../../../store';
+import { City, District, getFilterAPi, ProjectType, Region, Status } from '../../../store/slices/FiltersSlice';
 
 export interface FilterOptions {
   status: string[];
@@ -11,10 +14,80 @@ export interface FilterOptions {
 }
 
 export interface ActiveFilters {
-  status: string;
-  district: string;
-  city: string;
-  area: string;
+
+  RegionId: string,
+  CityId: string,
+  DistrictId: string,
+  StatusId: string
+
+}
+
+
+
+
+interface FilterDropdownListProps {
+  t: {
+    status: string,
+    all: string
+  },
+  label: string,
+  FilterValue: string,
+  handleFilterChange: (val: string, val2: string) => void,
+  filterChangeObject: string,
+  isArabic: boolean,
+  filterData: ProjectType[] | Status[]
+}
+
+const FilterDropdownList: React.FC<FilterDropdownListProps> = ({ t, label, FilterValue, handleFilterChange, filterChangeObject, isArabic, filterData }) => {
+  return <>
+    <div className={styles.filter__group}>
+      <label className={styles.filter__label}>{label}</label>
+      <select
+        className={styles.filter__select}
+        value={FilterValue}
+        onChange={(e) => handleFilterChange(`${filterChangeObject}`, e.target.value)}
+      >
+        <option value="">{t.all}</option>
+        {filterData && filterData.length !== 0 && filterData.map(item => <option value={`${item.id}`}>
+          {isArabic ? item.nameAr : item.name}
+        </option>)}
+        {/* <option value="available">{t.statusOptions.available}</option>
+        <option value="comingSoon">{t.statusOptions.comingSoon}</option> */}
+      </select>
+    </div>
+  </>
+}
+interface FilterDropdownListProps2 {
+  t: {
+    status: string,
+    all: string
+  },
+  label: string,
+  FilterValue: string,
+  handleFilterChange: (val: string, val2: string) => void,
+  filterChangeObject: string,
+  isArabic: boolean,
+  filterData: District[] | City[] | Region[]
+}
+
+const FilterDropdownList2: React.FC<FilterDropdownListProps2> = ({ t, label, FilterValue, handleFilterChange, filterChangeObject, isArabic, filterData }) => {
+  return <>
+    <div className={styles.filter__group}>
+      <label className={styles.filter__label}>{label}</label>
+      <select
+        className={styles.filter__select}
+        value={FilterValue}
+        onChange={(e) => handleFilterChange(`${filterChangeObject}`, e.target.value)}
+      >
+        <option value="">{t.all}</option>
+        {filterData && filterData.length !== 0 && filterData.map(item => <option value={`${item.id}`}>
+          {isArabic ? item.nameAr : item.nameEn}
+        </option>)}
+        {/* <option value="available">{t.statusOptions.available}</option>
+        <option value="comingSoon">{t.statusOptions.comingSoon}</option> */}
+      </select>
+    </div>
+  </>
 }
 
 interface ProjectFilterProps {
@@ -23,21 +96,36 @@ interface ProjectFilterProps {
   filteredCount: number;
 }
 
-const ProjectFilter: React.FC<ProjectFilterProps> = ({ 
-  onFilterChange, 
-  totalCount, 
-  filteredCount 
+const ProjectFilter: React.FC<ProjectFilterProps> = ({
+  onFilterChange,
+  totalCount,
+  filteredCount
 }) => {
   const { currentLanguage } = useLanguage();
   const isArabic = currentLanguage.code === 'ar';
-  
+
+  const {
+    data, loading, error
+  } = useSelector((state: RootState) => state.Filter);
+  const dispatch = useDispatch<AppDispatch>();
+
+
+
+  useEffect(() => {
+    dispatch(getFilterAPi("project"));
+  }, [])
+
+  useEffect(() => {
+    data && data.statuses && console.log("fetch Data", data.statuses);
+  }, [data])
+
   const [filters, setFilters] = useState({
-    status: '',
-    district: '',
-    city: '',
-    area: ''
+    RegionId: "",
+    CityId: "",
+    DistrictId: "",
+    StatusId: ""
   });
-  
+
   const [isOpen, setIsOpen] = useState(false);
 
   const content = {
@@ -126,10 +214,10 @@ const ProjectFilter: React.FC<ProjectFilterProps> = ({
 
   const clearAllFilters = () => {
     const clearedFilters = {
-      status: '',
-      district: '',
-      city: '',
-      area: ''
+      RegionId: "",
+      CityId: "",
+      DistrictId: "",
+      StatusId: ""
     };
     setFilters(clearedFilters);
     onFilterChange(clearedFilters);
@@ -142,14 +230,14 @@ const ProjectFilter: React.FC<ProjectFilterProps> = ({
       <div className={styles.filter__container}>
         {/* Mobile Filter Toggle */}
         <div className={styles.filter__mobile_header}>
-          <button 
+          <button
             className={styles.filter__toggle}
             onClick={() => setIsOpen(!isOpen)}
           >
             <Filter size={20} />
             <span>{t.filterTitle}</span>
           </button>
-          
+
           <div className={styles.filter__results}>
             {filteredCount > 0 ? t.showingResults : t.noResults}
           </div>
@@ -158,10 +246,48 @@ const ProjectFilter: React.FC<ProjectFilterProps> = ({
         {/* Filter Controls */}
         <div className={`${styles.filter__controls} ${isOpen ? styles.filter__controls_open : ''}`}>
           <div className={styles.filter__grid}>
+
+
+            <FilterDropdownList
+              t={t}
+              label={t.status}
+              FilterValue={filters.StatusId}
+              handleFilterChange={handleFilterChange}
+              filterChangeObject={"StatusId"}
+              isArabic={isArabic}
+              filterData={data?.statuses ? data.statuses : []} />
+
+            <FilterDropdownList2
+              t={t}
+              label={t.district}
+              FilterValue={filters.DistrictId}
+              handleFilterChange={handleFilterChange}
+              filterChangeObject={"DistrictId"}
+              isArabic={isArabic}
+              filterData={data?.districts ? data.districts : []} />
+
+            <FilterDropdownList2
+              t={t}
+              label={t.city}
+              FilterValue={filters.CityId}
+              handleFilterChange={handleFilterChange}
+              filterChangeObject={"CityId"}
+              isArabic={isArabic}
+              filterData={data?.cities ? data.cities : []} />
+
+            <FilterDropdownList2
+              t={t}
+              label={t.area}
+              FilterValue={filters.DistrictId}
+              handleFilterChange={handleFilterChange}
+              filterChangeObject={"DistrictId"}
+              isArabic={isArabic}
+              filterData={data?.regions ? data.regions : []} />
+
             {/* Status Filter */}
-            <div className={styles.filter__group}>
+            {/* <div className={styles.filter__group}>
               <label className={styles.filter__label}>{t.status}</label>
-              <select 
+              <select
                 className={styles.filter__select}
                 value={filters.status}
                 onChange={(e) => handleFilterChange('status', e.target.value)}
@@ -170,12 +296,12 @@ const ProjectFilter: React.FC<ProjectFilterProps> = ({
                 <option value="available">{t.statusOptions.available}</option>
                 <option value="comingSoon">{t.statusOptions.comingSoon}</option>
               </select>
-            </div>
+            </div> */}
 
             {/* District Filter */}
-            <div className={styles.filter__group}>
+            {/* <div className={styles.filter__group}>
               <label className={styles.filter__label}>{t.district}</label>
-              <select 
+              <select
                 className={styles.filter__select}
                 value={filters.district}
                 onChange={(e) => handleFilterChange('district', e.target.value)}
@@ -186,12 +312,12 @@ const ProjectFilter: React.FC<ProjectFilterProps> = ({
                 <option value="dammam">{t.districtOptions.dammam}</option>
                 <option value="khobar">{t.districtOptions.khobar}</option>
               </select>
-            </div>
+            </div> */}
 
             {/* City Filter */}
-            <div className={styles.filter__group}>
+            {/* <div className={styles.filter__group}>
               <label className={styles.filter__label}>{t.city}</label>
-              <select 
+              <select
                 className={styles.filter__select}
                 value={filters.city}
                 onChange={(e) => handleFilterChange('city', e.target.value)}
@@ -202,12 +328,12 @@ const ProjectFilter: React.FC<ProjectFilterProps> = ({
                 <option value="east">{t.cityOptions.east}</option>
                 <option value="west">{t.cityOptions.west}</option>
               </select>
-            </div>
+            </div> */}
 
             {/* Area Filter */}
-            <div className={styles.filter__group}>
+            {/* <div className={styles.filter__group}>
               <label className={styles.filter__label}>{t.area}</label>
-              <select 
+              <select
                 className={styles.filter__select}
                 value={filters.area}
                 onChange={(e) => handleFilterChange('area', e.target.value)}
@@ -218,13 +344,13 @@ const ProjectFilter: React.FC<ProjectFilterProps> = ({
                 <option value="sulaimaniya">{t.areaOptions.sulaimaniya}</option>
                 <option value="sahafa">{t.areaOptions.sahafa}</option>
               </select>
-            </div>
+            </div> */}
 
             {/* Clear Filters */}
             {hasActiveFilters && (
               <div className={styles.filter__group}>
                 <label className={styles.filter__label} style={{ opacity: 0 }}>Actions</label>
-                <button 
+                <button
                   className={styles.filter__clear}
                   onClick={clearAllFilters}
                 >
@@ -244,5 +370,8 @@ const ProjectFilter: React.FC<ProjectFilterProps> = ({
     </div>
   );
 };
+
+
+
 
 export default ProjectFilter;

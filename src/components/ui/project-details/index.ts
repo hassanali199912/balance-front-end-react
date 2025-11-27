@@ -45,7 +45,7 @@ export interface ProjectOverview {
 }
 
 export interface ProjectDetailProperty {
-  id: string;
+  id: string | Number;
   name: string;
   nameAr: string;
   type: string;

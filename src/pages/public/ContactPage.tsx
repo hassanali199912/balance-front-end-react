@@ -1,9 +1,12 @@
-import React, { useState } from 'react';
+import React, { useEffect, useState } from 'react';
 import { Mail, Phone, MapPin, Clock, Send, User, MessageSquare } from 'lucide-react';
 import { useLanguage } from '../../contexts/useLanguage';
 import PageBreadcrumb from '../../components/ui/shared/PageBreadcrumb';
-import Toast from '../../components/ui/Toast';
+import Toast from '../../components/ui/common/Toast';
 import styles from '../../styles/components/public/Contact.module.css';
+import { useDispatch, useSelector } from 'react-redux';
+import { AppDispatch, RootState } from '../../store';
+import { contactFormApi, ContactFromData } from '../../store/slices/ContactFormSlice';
 
 interface ContactFormData {
   name: string;
@@ -15,19 +18,19 @@ interface ContactFormData {
 }
 
 const ContactPage: React.FC = () => {
+
+  //#region Code
   const { currentLanguage } = useLanguage();
   const isArabic = currentLanguage.code === 'ar';
 
-  const [formData, setFormData] = useState<ContactFormData>({
-    name: '',
+  const [formData, setFormData] = useState<ContactFromData>({
+    fullName: '',
     email: '',
-    phone: '',
+    phoneNumber: '',
     subject: '',
     message: '',
-    inquiryType: 'general'
+    inquiryType: 1
   });
-
-  const [loading, setLoading] = useState(false);
   const [toast, setToast] = useState<{
     show: boolean;
     message: string;
@@ -80,6 +83,10 @@ const ContactPage: React.FC = () => {
         messageRequired: 'Message is required',
         messageSent: 'Message sent successfully! We will get back to you soon.',
         sendError: 'Failed to send message. Please try again.'
+      },
+      formSubmit: {
+        success: "Thank you for your message! We will get in touch soon.",
+        error: "Something went wrong,try again latter"
       }
     },
     ar: {
@@ -127,11 +134,21 @@ const ContactPage: React.FC = () => {
         messageRequired: 'الرسالة مطلوبة',
         messageSent: 'تم إرسال الرسالة بنجاح! سنتواصل معك قريباً.',
         sendError: 'فشل في إرسال الرسالة. يرجى المحاولة مرة أخرى.'
+      },
+      formSubmit: {
+        success: "تم ايصال الرسالة , سوف يقوم فريقنا بالتواصل معك قريبا ",
+        error: "حدث خطاء اثناء الارسال , يرجا المحاولة لاحقا "
       }
     }
   };
-
   const t = isArabic ? content.ar : content.en;
+  const { data, error, loading } = useSelector((state: RootState) => state.Contact)
+  const dispatch = useDispatch<AppDispatch>()
+
+
+  //#endregion Code
+
+  //#region Functionality
 
   const showToast = (message: string, type: 'success' | 'error' | 'info') => {
     setToast({ show: true, message, type });
@@ -143,40 +160,52 @@ const ContactPage: React.FC = () => {
   };
 
   const validateForm = (): boolean => {
-    if (!formData.name.trim()) {
+
+    if (!formData.fullName.trim()) {
+
       showToast(t.validation.nameRequired, 'error');
       return false;
     }
 
     if (!formData.email.trim()) {
       showToast(t.validation.emailRequired, 'error');
+
       return false;
     }
 
     const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
     if (!emailRegex.test(formData.email)) {
       showToast(t.validation.emailInvalid, 'error');
+
+
       return false;
     }
 
-    if (!formData.phone.trim()) {
+    if (!formData.phoneNumber.trim()) {
       showToast(t.validation.phoneRequired, 'error');
+
+
+
       return false;
     }
 
     const phoneRegex = /^[+]?[1-9][\d]{0,15}$/;
-    if (!phoneRegex.test(formData.phone.replace(/\s/g, ''))) {
+    if (!phoneRegex.test(formData.phoneNumber.replace(/\s/g, ''))) {
       showToast(t.validation.phoneInvalid, 'error');
+
       return false;
     }
 
     if (!formData.subject.trim()) {
       showToast(t.validation.subjectRequired, 'error');
+
+
       return false;
     }
 
     if (!formData.message.trim()) {
       showToast(t.validation.messageRequired, 'error');
+
       return false;
     }
 
@@ -185,38 +214,49 @@ const ContactPage: React.FC = () => {
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    
-    if (!validateForm()) return;
 
-    setLoading(true);
+    if (!validateForm()) {
 
-    try {
-      // Simulate API call
-      await new Promise(resolve => setTimeout(resolve, 2000));
-      
-      showToast(t.validation.messageSent, 'success');
-      
-      // Clear form after successful submission
+      return
+    };
+    const payloadData: ContactFromData = {
+      email: formData.email,
+      fullName: formData.fullName,
+      inquiryType: Number(formData.inquiryType),
+      message: formData.message,
+      phoneNumber: formData.phoneNumber,
+      subject: formData.subject
+
+    }
+    dispatch(contactFormApi(payloadData))
+  };
+
+  useEffect(() => {
+    // in case success
+    if (!loading && data !== null && data.message === "Thank you for your message! We will get in touch soon.") {
+      showToast(t.formSubmit.success, "success")
       setFormData({
-        name: '',
+        fullName: '',
         email: '',
-        phone: '',
+        phoneNumber: '',
         subject: '',
         message: '',
-        inquiryType: 'general'
-      });
-
-    } catch {
-      showToast(t.validation.sendError, 'error');
-    } finally {
-      setLoading(false);
+        inquiryType: 1
+      })
     }
-  };
+
+    !loading && error !== null && showToast(t.formSubmit.error, "error")
+  }, [data, error])
+
+  //#endregion Functionality
+
+
+
 
   return (
     <div className={styles.contact} dir={isArabic ? 'rtl' : 'ltr'}>
       {/* Page Breadcrumb */}
-      <PageBreadcrumb 
+      <PageBreadcrumb
         title={t.pageTitle}
         titleAr={t.pageTitle}
         backgroundImage="https://res.cloudinary.com/dk2cdwufj/image/upload/v1753362166/Image-6_u4opka.jpg"
@@ -228,7 +268,7 @@ const ContactPage: React.FC = () => {
             {/* Contact Information */}
             <div className={styles.contact__info_section}>
               <h2 className={styles.contact__section_title}>{t.contactInfo}</h2>
-              
+
               {/* Contact Cards */}
               <div className={styles.contact__info_cards}>
                 <div className={styles.contact__info_card}>
@@ -280,7 +320,7 @@ const ContactPage: React.FC = () => {
             {/* Contact Form */}
             <div className={styles.contact__form_section}>
               <h2 className={styles.contact__section_title}>{t.getInTouch}</h2>
-              
+
               <form className={styles.contact__form} onSubmit={handleSubmit}>
                 {/* Name and Email Row */}
                 <div className={styles.contact__form_row}>
@@ -290,12 +330,13 @@ const ContactPage: React.FC = () => {
                       <User className={styles.contact__input_icon} size={20} />
                       <input
                         type="text"
-                        name="name"
-                        value={formData.name}
+                        name="fullName"
+                        value={formData.fullName}
                         onChange={handleInputChange}
                         placeholder={t.placeholders.name}
                         className={styles.contact__input}
                         disabled={loading}
+
                       />
                     </div>
                   </div>
@@ -325,8 +366,8 @@ const ContactPage: React.FC = () => {
                       <Phone className={styles.contact__input_icon} size={20} />
                       <input
                         type="tel"
-                        name="phone"
-                        value={formData.phone}
+                        name="phoneNumber"
+                        value={formData.phoneNumber}
                         onChange={handleInputChange}
                         placeholder={t.placeholders.phone}
                         className={styles.contact__input}
@@ -344,10 +385,10 @@ const ContactPage: React.FC = () => {
                       className={styles.contact__select}
                       disabled={loading}
                     >
-                      <option value="general">{t.inquiryTypes.general}</option>
-                      <option value="property">{t.inquiryTypes.property}</option>
-                      <option value="investment">{t.inquiryTypes.investment}</option>
-                      <option value="support">{t.inquiryTypes.support}</option>
+                      <option value={1}>{t.inquiryTypes.general}</option>
+                      <option value={2}>{t.inquiryTypes.property}</option>
+                      <option value={3}>{t.inquiryTypes.investment}</option>
+                      <option value={4}>{t.inquiryTypes.support}</option>
                     </select>
                   </div>
                 </div>

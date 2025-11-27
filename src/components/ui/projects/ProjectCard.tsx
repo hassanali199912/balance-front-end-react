@@ -3,6 +3,7 @@ import { MapPin, Calendar, Eye, ArrowRight, ArrowLeft, Heart } from 'lucide-reac
 import styles from '../../../styles/components/projects/ProjectCard.module.css';
 import { useLanguage } from '../../../contexts/useLanguage';
 import { useFavorites } from '../../../contexts/useFavorites';
+import { Project } from '../../../store/slices/ProjectSlice';
 
 export interface ProjectCardData {
   id: number;
@@ -25,19 +26,19 @@ export interface ProjectCardData {
 }
 
 interface ProjectCardProps {
-  project: ProjectCardData;
+  project: Project;
   onViewDetails: (slug: string) => void;
 }
 
-const ProjectCard: React.FC<ProjectCardProps> = ({ 
-  project, 
+const ProjectCard: React.FC<ProjectCardProps> = ({
+  project,
   onViewDetails
 }) => {
   const { currentLanguage } = useLanguage();
-  const { 
-    isProjectFavorited, 
-    addProjectToFavorites, 
-    removeProjectFromFavorites 
+  const {
+    isProjectFavorited,
+    addProjectToFavorites,
+    removeProjectFromFavorites
   } = useFavorites();
   const isArabic = currentLanguage.code === 'ar';
   const isFavorited = isProjectFavorited(project.id);
@@ -65,10 +66,10 @@ const ProjectCard: React.FC<ProjectCardProps> = ({
 
   const t = isArabic ? content.ar : content.en;
   const projectData = {
-    title: isArabic ? project.titleAr : project.title,
-    description: isArabic ? project.descriptionAr : project.description,
-    location: isArabic ? project.locationAr : project.location,
-    price: isArabic ? project.priceAr : project.price
+    title: isArabic ? project.nameAr : project.nameEn,
+    description: isArabic ? project.descriptionAr : project.descriptionEn,
+    location: isArabic ? project.locationAr : project.locationEn,
+    price: isArabic ? project.cost : project.cost
   };
 
   const getStatusText = (status: string) => {
@@ -76,14 +77,14 @@ const ProjectCard: React.FC<ProjectCardProps> = ({
   };
 
   const getStatusClass = (status: string) => {
-    return status === 'available' 
-      ? styles.project_card__status_available 
+    return status === 'available'
+      ? styles.project_card__status_available
       : styles.project_card__status_coming;
   };
 
   const handleFavoriteClick = async (event: React.MouseEvent) => {
     event.stopPropagation();
-    
+
     if (isFavorited) {
       await removeProjectFromFavorites(project.id);
     } else {
@@ -94,34 +95,34 @@ const ProjectCard: React.FC<ProjectCardProps> = ({
     <div className={styles.project_card} dir={isArabic ? 'rtl' : 'ltr'}>
       {/* Image */}
       <div className={styles.project_card__image_container}>
-        <img 
-          src={project.image} 
+        <img
+          src={project.mainImageUrl}
           alt={projectData.title}
           className={styles.project_card__image}
         />
-        
+
         {/* Status Badge */}
-        <div className={`${styles.project_card__status} ${getStatusClass(project.status)}`}>
-          {getStatusText(project.status)}
+        <div className={`${styles.project_card__status} ${getStatusClass(project.statusNameEn)}`}>
+          {getStatusText(project.statusNameEn)}
         </div>
 
         {/* Favorite Button */}
-        <button 
+        <button
           className={`${styles.project_card__favorite} ${isFavorited ? styles.project_card__favorite_active : ''}`}
           onClick={handleFavoriteClick}
           title={isFavorited ? t.removeFromFavorites : t.addToFavorites}
         >
-          <Heart 
-            size={20} 
-            fill={isFavorited ? '#FBBF24' : 'none'} 
+          <Heart
+            size={20}
+            fill={isFavorited ? '#FBBF24' : 'none'}
           />
         </button>
 
         {/* View Overlay */}
         <div className={styles.project_card__overlay}>
-          <button 
+          <button
             className={styles.project_card__view_btn}
-            onClick={() => onViewDetails(project.slug)}
+            onClick={() => onViewDetails(`${project.id}`)}
           >
             <Eye size={20} />
             <span>{t.viewDetails}</span>
@@ -154,23 +155,23 @@ const ProjectCard: React.FC<ProjectCardProps> = ({
             <MapPin size={16} />
             <span>{projectData.location}</span>
           </div>
-          
+
           <div className={styles.project_card__meta_item}>
             <Calendar size={16} />
-            <span>{t.completionDate}: {project.completionDate}</span>
+            <span>{t.completionDate}: {project.estimatedCompletionDate}</span>
           </div>
-          
-          {project.units && (
+
+          {project.countOfUnits && (
             <div className={styles.project_card__meta_item}>
-              <span>{project.units} {t.units}</span>
+              <span>{project.countOfUnits} {t.units}</span>
             </div>
           )}
         </div>
 
         {/* Action */}
-        <button 
+        <button
           className={styles.project_card__action}
-          onClick={() => onViewDetails(project.slug)}
+          onClick={() => onViewDetails(`${project.id}`)}
         >
           <span>{t.viewDetails}</span>
           {isArabic ? <ArrowLeft size={18} /> : <ArrowRight size={18} />}

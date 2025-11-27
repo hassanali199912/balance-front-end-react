@@ -5,6 +5,10 @@ import PropertyCard from '../../components/ui/properties/PropertyCard';
 import LoadingSpinner from '../../components/ui/LoadingSpinner';
 import { useLanguage } from '../../contexts/useLanguage';
 import styles from '../../styles/pages/PropertiesPage.module.css';
+import { useDispatch, useSelector } from 'react-redux';
+import { AppDispatch, RootState } from '../../store';
+import { getUnitsAPi } from '../../store/slices/UnitSlice';
+import { Pagination } from '../../components/ui/projects';
 
 // Mock data for properties
 const mockProperties = [
@@ -125,6 +129,8 @@ const mockProperties = [
 ];
 
 const PropertiesPage: React.FC = () => {
+  //#region Code
+
   const { currentLanguage } = useLanguage();
   const isArabic = currentLanguage.code === 'ar';
 
@@ -133,10 +139,11 @@ const PropertiesPage: React.FC = () => {
   const [viewMode, setViewMode] = useState<'grid' | 'list'>('grid');
   const [searchTerm, setSearchTerm] = useState('');
   const [filters, setFilters] = useState({
-    type: '',
-    minPrice: '',
-    maxPrice: '',
-    bedrooms: '',
+
+    Type: '',
+    MinPrice: '',
+    MaxPrice: '',
+    NumberOfRooms: '',
     location: ''
   });
   const [showFilters, setShowFilters] = useState(false);
@@ -214,191 +221,259 @@ const PropertiesPage: React.FC = () => {
     fetchProperties();
   }, []);
 
-  // Filter properties based on search and filters
-  const filteredProperties = properties.filter(property => {
-    const title = isArabic ? property.titleAr : property.titleEn;
-    const location = isArabic ? property.locationAr : property.locationEn;
-    
-    const matchesSearch = title.toLowerCase().includes(searchTerm.toLowerCase()) ||
-                         location.toLowerCase().includes(searchTerm.toLowerCase());
-    
-    const matchesType = !filters.type || property.type === filters.type;
-    const matchesMinPrice = !filters.minPrice || property.price >= parseInt(filters.minPrice);
-    const matchesMaxPrice = !filters.maxPrice || property.price <= parseInt(filters.maxPrice);
-    const matchesBedrooms = !filters.bedrooms || property.bedrooms >= parseInt(filters.bedrooms);
-    const matchesLocation = !filters.location || location.toLowerCase().includes(filters.location.toLowerCase());
 
-    return matchesSearch && matchesType && matchesMinPrice && matchesMaxPrice && matchesBedrooms && matchesLocation;
-  });
 
   const clearFilters = () => {
     setFilters({
-      type: '',
-      minPrice: '',
-      maxPrice: '',
-      bedrooms: '',
+      Type: '',
+      MinPrice: '',
+      MaxPrice: '',
+      NumberOfRooms: '',
       location: ''
     });
     setSearchTerm('');
+    setCurrentPage(1);
+    dispatch(getUnitsAPi({
+      ...filters,
+      Page: 1
+    }));
   };
 
   const handleFilterChange = (key: string, value: string) => {
+    console.log("key", key, "value", value);
+
     setFilters(prev => ({ ...prev, [key]: value }));
+    setCurrentPage(1); // Reset to first page when filters change
+    console.log("this is filter unites", filters);
+    // Type=2&NumberOfRooms=1&MinPrice=5000&MaxPrice=10000000
+    dispatch(getUnitsAPi({
+      ...filters,
+      Page: 1
+    }))
   };
 
-  if (loading) {
-    return (
-      <div className={styles.properties_page__loading}>
-        <LoadingSpinner text={t.loading} />
-      </div>
-    );
-  }
+  const [currentPage, setCurrentPage] = useState(1);
+
+
+  const handlePageChange = (page: number) => {
+    setCurrentPage(page);
+    window.scrollTo({ top: 0, behavior: 'smooth' });
+    dispatch(getUnitsAPi({
+      ...filters,
+      Page: page
+    }));
+  };
+
+  //#endregion Code
+
+  //#region Fetch Data
+
+
+  const { unit: {
+    data, loading: unitLoading, error: unitError
+  } } = useSelector((state: RootState) => state.units);
+
+  const dispatch = useDispatch<AppDispatch>();
+
+  useEffect(() => {
+    dispatch(getUnitsAPi({}));
+  }, [])
+
+
+  useEffect(() => {
+    if (!unitLoading && data !== null) {
+      console.log("Unit Loaded Data ", data);
+    }
+  }, [data, unitLoading])
+
+
+
+  //#endregion Fetch Data 
+
+
+
+
+  // if (unitLoading) {
+  //   return (
+  //     <div className={styles.properties_page__loading}>
+  //       <LoadingSpinner text={t.loading} />
+  //     </div>
+  //   );
+  // }
 
   return (
     <div className={styles.properties_page} dir={isArabic ? 'rtl' : 'ltr'}>
-      {/* Header */}
-      <div className={styles.properties_page__header}>
-        <div className={styles.properties_page__title_section}>
-          <h1 className={styles.properties_page__title}>{t.title}</h1>
-          <p className={styles.properties_page__subtitle}>{t.subtitle}</p>
-        </div>
-      </div>
+      <div className={styles.properties__container}>
 
-      {/* Search and Filters */}
-      <div className={styles.properties_page__controls}>
-        <div className={styles.properties_page__search}>
-          <Search size={20} />
-          <input
-            type="text"
-            placeholder={t.searchPlaceholder}
-            value={searchTerm}
-            onChange={(e) => setSearchTerm(e.target.value)}
-            className={styles.properties_page__search_input}
-          />
-        </div>
-
-        <div className={styles.properties_page__actions}>
-          <button
-            onClick={() => setShowFilters(!showFilters)}
-            className={`${styles.properties_page__filter_btn} ${showFilters ? styles.properties_page__filter_btn_active : ''}`}
-          >
-            <SlidersHorizontal size={20} />
-            {t.filters}
-          </button>
-
-          <div className={styles.properties_page__view_toggle}>
-            <button
-              onClick={() => setViewMode('grid')}
-              className={`${styles.properties_page__view_btn} ${viewMode === 'grid' ? styles.properties_page__view_btn_active : ''}`}
-            >
-              <Grid size={18} />
-            </button>
-            <button
-              onClick={() => setViewMode('list')}
-              className={`${styles.properties_page__view_btn} ${viewMode === 'list' ? styles.properties_page__view_btn_active : ''}`}
-            >
-              <List size={18} />
-            </button>
+        {/* Header */}
+        <div className={styles.properties_page__header}>
+          <div className={styles.properties_page__title_section}>
+            <h1 className={styles.properties_page__title}>{t.title}</h1>
+            <p className={styles.properties_page__subtitle}>{t.subtitle}</p>
           </div>
         </div>
-      </div>
 
-      {/* Filters Panel */}
-      {showFilters && (
-        <div className={styles.properties_page__filters}>
-          <div className={styles.properties_page__filters_grid}>
-            <div className={styles.properties_page__filter_group}>
-              <label>{t.propertyType}</label>
-              <select
-                value={filters.type}
-                onChange={(e) => handleFilterChange('type', e.target.value)}
-              >
-                <option value="">All Types</option>
-                <option value="apartment">{t.propertyTypes.apartment}</option>
-                <option value="villa">{t.propertyTypes.villa}</option>
-                <option value="studio">{t.propertyTypes.studio}</option>
-                <option value="penthouse">{t.propertyTypes.penthouse}</option>
-                <option value="duplex">{t.propertyTypes.duplex}</option>
-              </select>
-            </div>
-
-            <div className={styles.properties_page__filter_group}>
-              <label>{t.minPrice}</label>
-              <input
-                type="number"
-                placeholder="0"
-                value={filters.minPrice}
-                onChange={(e) => handleFilterChange('minPrice', e.target.value)}
-              />
-            </div>
-
-            <div className={styles.properties_page__filter_group}>
-              <label>{t.maxPrice}</label>
-              <input
-                type="number"
-                placeholder="10000000"
-                value={filters.maxPrice}
-                onChange={(e) => handleFilterChange('maxPrice', e.target.value)}
-              />
-            </div>
-
-            <div className={styles.properties_page__filter_group}>
-              <label>{t.bedrooms}</label>
-              <select
-                value={filters.bedrooms}
-                onChange={(e) => handleFilterChange('bedrooms', e.target.value)}
-              >
-                <option value="">Any</option>
-                <option value="1">1+</option>
-                <option value="2">2+</option>
-                <option value="3">3+</option>
-                <option value="4">4+</option>
-                <option value="5">5+</option>
-              </select>
-            </div>
-          </div>
-
-          <div className={styles.properties_page__filters_actions}>
-            <button onClick={clearFilters} className={styles.properties_page__clear_btn}>
-              {t.clearFilters}
-            </button>
-          </div>
-        </div>
-      )}
-
-      {/* Results Header */}
-      <div className={styles.properties_page__results_header}>
-        <p className={styles.properties_page__results_count}>
-          {filteredProperties.length} {t.results}
-        </p>
-      </div>
-
-      {/* Properties Grid/List */}
-      {filteredProperties.length === 0 ? (
-        <div className={styles.properties_page__no_results}>
-          <MapPin size={48} />
-          <h3>{t.noResults}</h3>
-          <p>{t.noResultsDesc}</p>
-          <button onClick={clearFilters} className={styles.properties_page__clear_btn}>
-            {t.clearFilters}
-          </button>
-        </div>
-      ) : (
-        <div className={`${styles.properties_page__grid} ${
-          viewMode === 'list' ? styles.properties_page__grid_list : ''
-        }`}>
-          {filteredProperties.map((property, index) => (
-            <PropertyCard
-              key={property.id}
-              property={property}
-              onViewDetails={() => {
-                // Navigation is handled inside PropertyCard
-              }}
-              animationDelay={index * 0.1}
+        {/* Search and Filters */}
+        <div className={styles.properties_page__controls}>
+          <div className={styles.properties_page__search}>
+            <Search size={20} />
+            <input
+              type="text"
+              placeholder={t.searchPlaceholder}
+              value={searchTerm}
+              onChange={(e) => setSearchTerm(e.target.value)}
+              className={styles.properties_page__search_input}
             />
-          ))}
+          </div>
+
+          <div className={styles.properties_page__actions}>
+            <button
+              onClick={() => setShowFilters(!showFilters)}
+              className={`${styles.properties_page__filter_btn} ${showFilters ? styles.properties_page__filter_btn_active : ''}`}
+            >
+              <SlidersHorizontal size={20} />
+              {t.filters}
+            </button>
+
+            <div className={styles.properties_page__view_toggle}>
+              <button
+                onClick={() => setViewMode('grid')}
+                className={`${styles.properties_page__view_btn} ${viewMode === 'grid' ? styles.properties_page__view_btn_active : ''}`}
+              >
+                <Grid size={18} />
+              </button>
+              <button
+                onClick={() => setViewMode('list')}
+                className={`${styles.properties_page__view_btn} ${viewMode === 'list' ? styles.properties_page__view_btn_active : ''}`}
+              >
+                <List size={18} />
+              </button>
+            </div>
+          </div>
         </div>
-      )}
+
+        {/* Filters Panel */}
+        {showFilters && (
+          <div className={styles.properties_page__filters}>
+            <div className={styles.properties_page__filters_grid}>
+              <div className={styles.properties_page__filter_group}>
+                <label>{t.propertyType}</label>
+                <select
+                  value={filters.Type}
+                  onChange={(e) => handleFilterChange('Type', e.target.value)}
+                >
+                  <option value="">All Types</option>
+                  <option value={1}>{t.propertyTypes.apartment}</option>
+                  <option value={2}>{t.propertyTypes.villa}</option>
+                  <option value={3}>{t.propertyTypes.studio}</option>
+                  <option value={4}>{t.propertyTypes.penthouse}</option>
+                  <option value={5}>{t.propertyTypes.duplex}</option>
+                </select>
+              </div>
+
+              <div className={styles.properties_page__filter_group}>
+                <label>{t.minPrice}</label>
+                <input
+                  type="number"
+                  placeholder="0"
+                  value={filters.MinPrice}
+                  onChange={(e) => handleFilterChange('MinPrice', e.target.value)}
+                />
+              </div>
+
+              <div className={styles.properties_page__filter_group}>
+                <label>{t.maxPrice}</label>
+                <input
+                  type="number"
+                  placeholder="10000000"
+                  value={filters.MaxPrice}
+                  onChange={(e) => handleFilterChange('MaxPrice', e.target.value)}
+                />
+              </div>
+
+              <div className={styles.properties_page__filter_group}>
+                <label>{t.bedrooms}</label>
+                <select
+                  value={filters.NumberOfRooms}
+                  onChange={(e) => handleFilterChange('NumberOfRooms', e.target.value)}
+                >
+                  <option value="">Any</option>
+                  <option value="1">1+</option>
+                  <option value="2">2+</option>
+                  <option value="3">3+</option>
+                  <option value="4">4+</option>
+                  <option value="5">5+</option>
+                </select>
+              </div>
+            </div>
+
+            <div className={styles.properties_page__filters_actions}>
+              <button onClick={clearFilters} className={styles.properties_page__clear_btn}>
+                {t.clearFilters}
+              </button>
+            </div>
+          </div>
+        )}
+
+        {/* Results Header */}
+        {data &&
+          (<div className={styles.properties_page__results_header}>
+            <p className={styles.properties_page__results_count}>
+              {data.totalCount + ""} {t.results}
+            </p>
+          </div>)
+        }
+
+        {unitLoading ? <>
+          <div className={styles.properties_page__loading}>
+            <LoadingSpinner text={t.loading} />
+          </div>
+
+        </> : <>
+          {data === null || data.items.length === 0 ? (
+            <div className={styles.properties_page__no_results}>
+              <MapPin size={48} />
+              <h3>{t.noResults}</h3>
+              <p>{t.noResultsDesc}</p>
+              <button onClick={clearFilters} className={styles.properties_page__clear_btn}>
+                {t.clearFilters}
+              </button>
+            </div>
+          ) : (
+            <>
+              <div className={`${styles.properties_page__grid} ${viewMode === 'list' ? styles.properties_page__grid_list : ''
+                }`}>
+                {data.items.map((property, index) => (
+
+                  <PropertyCard
+                    key={property.id}
+                    property={property}
+                    onViewDetails={() => {
+                    }}
+                    animationDelay={index * 0.1}
+                  />
+                ))}
+              </div>
+
+            </>
+          )}
+
+          <div className='pt-5'>
+            <Pagination
+              currentPage={currentPage}
+              totalPages={data && data.totalCount ? Math.ceil(Number(data.totalCount) / 10) : 1}
+              onPageChange={handlePageChange}
+              itemsPerPage={10}
+              totalItems={data && data.totalCount ? Number(data.totalCount) : 0}
+            />
+
+          </div>
+        </>}
+
+
+
+
+      </div>
     </div>
   );
 };
