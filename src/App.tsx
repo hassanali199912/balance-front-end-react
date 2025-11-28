@@ -17,6 +17,7 @@ const ContactPage = React.lazy(() => import('./pages/public/ContactPage'))
 const AboutPage = React.lazy(() => import('./pages/public/AboutPage'))
 const NotFoundPage = React.lazy(() => import('./pages/public/NotFoundPage'))
 
+
 // Auth Routes - lazy loaded
 const SignInPage = React.lazy(() => import('./pages/auth/SignInPage'))
 const SignUpPage = React.lazy(() => import('./pages/auth/SignUpPage'))
