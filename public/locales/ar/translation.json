@@ -1,0 +1,56 @@
+{
+  "common": {
+    "home": "الرئيسية",
+    "about": "عن الشركة",
+    "properties": "العقارات",
+    "services": "الخدمات",
+    "contact": "اتصل بنا",
+    "dashboard": "لوحة التحكم",
+    "language": "اللغة",
+    "arabic": "العربية",
+    "english": "English",
+    "login": "تسجيل الدخول",
+    "logout": "تسجيل الخروج",
+    "search": "بحث",
+    "filter": "تصفية",
+    "sort": "ترتيب",
+    "load_more": "تحميل المزيد",
+    "view_details": "عرض التفاصيل",
+    "back": "رجوع",
+    "next": "التالي",
+    "previous": "السابق"
+  },
+  "site": {
+    "title": "بالنس للتطوير العقاري",
+    "tagline": "شريكك الموثوق في الاستثمار العقاري",
+    "description": "نحن نقدم أفضل الحلول العقارية والاستثمارية في المملكة العربية السعودية"
+  },
+  "navigation": {
+    "residential": "سكني",
+    "commercial": "تجاري",
+    "investment": "استثماري",
+    "luxury": "فاخر"
+  },
+  "property": {
+    "price": "السعر",
+    "area": "المساحة",
+    "bedrooms": "غرف النوم",
+    "bathrooms": "دورات المياه",
+    "location": "الموقع",
+    "type": "النوع",
+    "status": "الحالة",
+    "for_sale": "للبيع",
+    "for_rent": "للإيجار",
+    "sold": "تم البيع",
+    "rented": "تم التأجير"
+  },
+  "dashboard": {
+    "overview": "نظرة عامة",
+    "properties": "العقارات",
+    "users": "المستخدمين",
+    "analytics": "التحليلات",
+    "settings": "الإعدادات",
+    "profile": "الملف الشخصي",
+    "notifications": "الإشعارات"
+  }
+}

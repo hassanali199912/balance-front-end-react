@@ -1,0 +1,48 @@
+.skeleton-box {
+  background: linear-gradient(90deg, #e5e5e5 25%, #f2f2f2 37%, #e5e5e5 63%);
+  background-size: 400% 100%;
+  animation: shimmer 1.4s ease infinite;
+  border-radius: 8px;
+  width: 100%;
+}
+
+@keyframes shimmer {
+  0% {
+    background-position: -400px 0;
+  }
+  100% {
+    background-position: 400px 0;
+  }
+}
+
+/* تخصيص للأجزاء المختلفة */
+.img-skeleton {
+  width: 100%;
+  height: 180px;
+  border-radius: 12px;
+}
+
+.title-skeleton {
+  height: 18px;
+  margin: 12px 0 8px;
+  width: 70%;
+}
+
+.location-skeleton {
+  height: 14px;
+  width: 50%;
+  margin-bottom: 10px;
+}
+
+.small-skeleton {
+  height: 12px;
+  width: 40%;
+  margin-bottom: 6px;
+}
+
+.button-skeleton {
+  height: 32px;
+  width: 100px;
+  border-radius: 20px;
+  margin-top: 10px;
+}

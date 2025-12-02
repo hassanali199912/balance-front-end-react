@@ -1,0 +1,330 @@
+/* Project Card Component */
+.project_card {
+  background: white;
+  border-radius: 16px;
+  overflow: hidden;
+  box-shadow: 0 4px 16px rgba(0, 0, 0, 0.08);
+  transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+  border: 1px solid #f0f0f0;
+  height: 100%;
+  display: flex;
+  flex-direction: column;
+}
+
+.project_card:hover {
+  transform: translateY(-8px);
+  box-shadow: 0 12px 32px rgba(181, 136, 99, 0.15);
+  border-color: #e8d5c4;
+}
+
+/* Image Container */
+.project_card__image_container {
+  position: relative;
+  height: 240px;
+  overflow: hidden;
+}
+
+.project_card__image {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  transition: transform 0.3s ease;
+}
+
+.project_card:hover .project_card__image {
+  transform: scale(1.05);
+}
+
+/* Status Badge */
+.project_card__status {
+  position: absolute;
+  top: 1rem;
+  right: 1rem;
+  padding: 0.5rem 1rem;
+  border-radius: 20px;
+  font-size: 0.875rem;
+  font-weight: 600;
+  backdrop-filter: blur(10px);
+  border: 1px solid rgba(255, 255, 255, 0.2);
+}
+
+[dir="rtl"] .project_card__status {
+  right: auto;
+  left: 1rem;
+}
+
+.project_card__status_available {
+  background: rgba(34, 197, 94, 0.9);
+  color: white;
+}
+
+.project_card__status_coming {
+  background: rgba(251, 191, 36, 0.9);
+  color: white;
+}
+
+/* Favorite Button */
+.project_card__favorite {
+  position: absolute;
+  top: 1rem;
+  right: 1rem;
+  width: 40px;
+  height: 40px;
+  background: rgba(255, 255, 255, 0.9);
+  border: none;
+  border-radius: 50%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  cursor: pointer;
+  transition: all 0.3s ease;
+  backdrop-filter: blur(10px);
+  color: var(--balance-gray-600);
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
+  z-index: 3;
+}
+
+.project_card__favorite:hover {
+  background: rgba(255, 255, 255, 1);
+  transform: scale(1.1);
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
+}
+
+.project_card__favorite_active {
+  background: rgba(251, 191, 36, 0.9);
+  color: var(--balance-white);
+}
+
+.project_card__favorite_active:hover {
+  background: rgba(251, 191, 36, 1);
+}
+
+/* RTL Support for Favorite Button */
+[dir="rtl"] .project_card__favorite {
+  right: auto;
+  left: 1rem;
+}
+
+/* Adjust status badge position when favorite button is present */
+.project_card__status {
+  left: 1%;
+  width: fit-content;
+}
+
+[dir="rtl"] .project_card__status {
+ 
+  right: 1%;
+}
+
+/* Overlay */
+.project_card__overlay {
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  background: rgba(41, 28, 14, 0.8);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  opacity: 0;
+  transition: opacity 0.3s ease;
+}
+
+.project_card:hover .project_card__overlay {
+  opacity: 1;
+}
+
+.project_card__view_btn {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  padding: 0.75rem 1.5rem;
+  background: #B58863;
+  color: white;
+  border: none;
+  border-radius: 8px;
+  font-weight: 600;
+  cursor: pointer;
+  transition: all 0.3s ease;
+  transform: translateY(10px);
+}
+
+.project_card:hover .project_card__view_btn {
+  transform: translateY(0);
+}
+
+.project_card__view_btn:hover {
+  background: #9d7555;
+  transform: scale(1.05);
+}
+
+/* Content */
+.project_card__content {
+  padding: 1.5rem;
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+}
+
+/* Header */
+.project_card__header {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  margin-bottom: 1rem;
+  gap: 0.5rem;
+}
+
+.project_card__title {
+  font-size: 1.25rem;
+  font-weight: 700;
+  color: #291C0E;
+  margin: 0;
+  line-height: 1.3;
+  width: 100%;
+}
+
+.project_card__price {
+  font-size: 1rem;
+  font-weight: 600;
+  color: #B58863;
+  margin: 0;
+}
+
+/* Description */
+.project_card__description {
+  color: #6B5B73;
+  line-height: 1.6;
+  margin: 0 0 1.5rem 0;
+  flex: 1;
+  font-size: 0.95rem;
+}
+
+/* Meta Info */
+.project_card__meta {
+  display: flex;
+  flex-direction: column;
+  gap: 0.75rem;
+  margin-bottom: 1.5rem;
+  padding-top: 1rem;
+  border-top: 1px solid #f0f0f0;
+}
+
+.project_card__meta_item {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  color: #8A7B85;
+  font-size: 0.875rem;
+}
+
+.project_card__meta_item svg {
+  color: #B58863;
+  flex-shrink: 0;
+}
+
+/* Action Button */
+.project_card__action {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 0.5rem;
+  padding: 0.875rem 1.5rem;
+  background: linear-gradient(135deg, #B58863 0%, #D4A574 100%);
+  color: white;
+  border: none;
+  border-radius: 8px;
+  font-weight: 600;
+  cursor: pointer;
+  transition: all 0.3s ease;
+  margin-top: auto;
+}
+
+.project_card__action:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 4px 12px rgba(181, 136, 99, 0.3);
+}
+
+/* RTL Support */
+[dir="rtl"] .project_card__header {
+  align-items: flex-end;
+}
+
+[dir="rtl"] .project_card__title {
+  text-align: right;
+}
+
+[dir="rtl"] .project_card__price {
+  text-align: right;
+}
+
+[dir="rtl"] .project_card__meta_item {
+  text-align: right;
+}
+
+[dir="rtl"] .project_card__action {
+  flex-direction: row-reverse;
+}
+
+[dir="rtl"] .project_card__view_btn {
+  flex-direction: row-reverse;
+}
+
+/* Responsive Design */
+@media (max-width: 768px) {
+  .project_card__image_container {
+    height: 200px;
+  }
+  
+  .project_card__content {
+    padding: 1.25rem;
+  }
+  
+  .project_card__title {
+    font-size: 1.125rem;
+  }
+  
+  .project_card__price {
+    font-size: 1rem;
+  }
+  
+  .project_card__status {
+    top: 0.75rem;
+    right: 0.75rem;
+    padding: 0.375rem 0.75rem;
+    font-size: 0.8rem;
+  }
+  
+  [dir="rtl"] .project_card__status {
+    right: auto;
+    left: 0.75rem;
+  }
+}
+
+@media (max-width: 480px) {
+  .project_card__header {
+    gap: 0.375rem;
+  }
+  
+  .project_card__title {
+    font-size: 1.125rem;
+  }
+  
+  .project_card__price {
+    font-size: 0.95rem;
+  }
+  
+  [dir="rtl"] .project_card__header {
+    align-items: flex-end;
+  }
+  
+  .project_card__meta {
+    gap: 0.5rem;
+  }
+  
+  .project_card__action {
+    padding: 0.75rem 1.25rem;
+    font-size: 0.9rem;
+  }
+}

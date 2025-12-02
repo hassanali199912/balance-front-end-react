@@ -1,0 +1,56 @@
+{
+  "common": {
+    "home": "Home",
+    "about": "About",
+    "properties": "Properties",
+    "services": "Services",
+    "contact": "Contact",
+    "dashboard": "Dashboard",
+    "language": "Language",
+    "arabic": "العربية",
+    "english": "English",
+    "login": "Login",
+    "logout": "Logout",
+    "search": "Search",
+    "filter": "Filter",
+    "sort": "Sort",
+    "load_more": "Load More",
+    "view_details": "View Details",
+    "back": "Back",
+    "next": "Next",
+    "previous": "Previous"
+  },
+  "site": {
+    "title": "Balance Real Estate",
+    "tagline": "Your Trusted Partner in Real Estate Investment",
+    "description": "We provide the best real estate and investment solutions in Saudi Arabia"
+  },
+  "navigation": {
+    "residential": "Residential",
+    "commercial": "Commercial",
+    "investment": "Investment",
+    "luxury": "Luxury"
+  },
+  "property": {
+    "price": "Price",
+    "area": "Area",
+    "bedrooms": "Bedrooms",
+    "bathrooms": "Bathrooms",
+    "location": "Location",
+    "type": "Type",
+    "status": "Status",
+    "for_sale": "For Sale",
+    "for_rent": "For Rent",
+    "sold": "Sold",
+    "rented": "Rented"
+  },
+  "dashboard": {
+    "overview": "Overview",
+    "properties": "Properties",
+    "users": "Users",
+    "analytics": "Analytics",
+    "settings": "Settings",
+    "profile": "Profile",
+    "notifications": "Notifications"
+  }
+}
